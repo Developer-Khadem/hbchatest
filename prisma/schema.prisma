@@ -1,0 +1,209 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Category {
+  id        String    @id @default(cuid())
+  name      String
+  createdAt DateTime  @default(now())
+  products  Product[]
+}
+
+model Product {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  price       Float
+  stock       Int
+  image       String?
+  categoryId  String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  category    Category @relation(fields: [categoryId], references: [id])
+}
+
+model Order {
+  id              String          @id @default(cuid())
+  customer        String
+  phone           String
+  address         String
+  subtotal        Int
+  deliveryFee     Int             @default(60)
+  total           Int
+  status          OrderStatus     @default(PENDING)
+  createdAt       DateTime        @default(now())
+  couponCode      String?
+  discount        Int             @default(0)
+  paymentStatus   PaymentStatus   @default(UNPAID)
+  transactionId   String?
+  payerPhone      String?
+  paymentMethod   String          @default("CASH_ON_DELIVERY")
+  orderItems      OrderItem[]
+  trackingHistory TrackingEvent[]
+
+  @@index([createdAt])
+  @@index([phone])
+}
+
+model OrderItem {
+  id        String       @id @default(cuid())
+  orderId   String
+  productId String
+  name      String
+  quantity  Int
+  unitPrice Int
+  order     Order        @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product   AcharProduct @relation(fields: [productId], references: [id])
+
+  @@index([orderId])
+}
+
+model Coupon {
+  id              String   @id @default(cuid())
+  code            String   @unique
+  discountPercent Int
+  expiresAt       DateTime
+  usageLimit      Int
+  usageCount      Int      @default(0)
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+}
+
+model AcharProduct {
+  id             String      @id
+  name           String
+  englishName    String
+  description    String
+  price          Int
+  compareAtPrice Int?
+  category       String
+  image          String
+  badge          String?
+  heat           String
+  inStock        Boolean     @default(true)
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime
+  brand          String?
+  images         String[]    @default([])
+  isActive       Boolean     @default(true)
+  stock          Int         @default(20)
+  slug           String?     @unique
+  shortDesc      String?
+  salePrice      Int?
+  ingredients    String?
+  unit           String?
+  featured       Boolean     @default(false)
+  tags           String[]    @default([])
+  translations   Json        @default("{}")
+  orderItems     OrderItem[]
+
+  @@index([category])
+}
+
+model AdminCategory {
+  id        String          @id
+  name      String          @unique
+  parentId  String?
+  createdAt DateTime        @default(now())
+  parent    AdminCategory?  @relation("AdminCategoryToAdminCategory", fields: [parentId], references: [id])
+  children  AdminCategory[] @relation("AdminCategoryToAdminCategory")
+}
+
+model Brand {
+  id        String   @id
+  name      String   @unique
+  createdAt DateTime @default(now())
+}
+
+model CustomerBlock {
+  phone     String   @id
+  note      String?
+  createdAt DateTime @default(now())
+}
+
+model SupportTicket {
+  id           String              @id @default(cuid())
+  ticketNumber String              @unique
+  name         String
+  phone        String
+  subject      String
+  category     String
+  message      String
+  status       SupportTicketStatus @default(OPEN)
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+
+  @@index([status, createdAt])
+  @@index([phone, createdAt])
+}
+
+model StoreSettings {
+  id                 String  @id @default("store")
+  name               String  @default("আচার বাড়ি")
+  logoUrl            String?
+  currency           String  @default("BDT")
+  phone              String  @default("")
+  email              String  @default("")
+  address            String  @default("")
+  dhakaDeliveryFee   Int     @default(60)
+  outsideDeliveryFee Int     @default(100)
+  nagadNumber        String  @default("")
+}
+
+model User {
+  id                 String              @id @default(cuid())
+  name               String
+  phone              String              @unique
+  email              String?             @unique
+  passwordHash       String?
+  role               String              @default("customer")
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  walletTransactions WalletTransaction[]
+}
+
+model WalletTransaction {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  amount      Decimal  @db.Decimal(10, 2)
+  type        String
+  description String
+  createdAt   DateTime @default(now())
+}
+
+model TrackingEvent {
+  id        String   @id @default(cuid())
+  orderId   String
+  order     Order    @relation(fields: [orderId], references: [id])
+  status    String
+  message   String
+  createdAt DateTime @default(now())
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  SHIPPED
+  DELIVERED
+  CANCELLED
+  PROCESSING
+  PENDING_VERIFICATION
+}
+
+enum PaymentStatus {
+  UNPAID
+  PAID
+  FAILED
+  PENDING_VERIFICATION
+}
+
+enum SupportTicketStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+}
