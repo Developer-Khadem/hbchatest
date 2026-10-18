@@ -15,6 +15,7 @@ import { storeInfo, type Product } from "@/lib/site-data";
 type SuggestionStatus = "idle" | "loading" | "ready" | "error";
 type ProductSuggestion = Product;
 const tabletLandscapeMediaQuery = "(orientation: landscape) and (min-width: 1024px) and (max-width: 1279px) and (max-height: 900px)";
+const mobilePortraitMediaQuery = "(orientation: portrait) and (max-width: 639px)";
 
 function isProductSuggestion(value: unknown): value is ProductSuggestion {
   if (typeof value !== "object" || value === null) return false;
@@ -71,6 +72,7 @@ export function Header() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isTabletLandscape, setIsTabletLandscape] = useState(false);
+  const [isMobilePortrait, setIsMobilePortrait] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [suggestions, setSuggestions] = useState<ProductSuggestion[]>([]);
   const [suggestionStatus, setSuggestionStatus] = useState<SuggestionStatus>("idle");
@@ -79,7 +81,7 @@ export function Header() {
   const searchFormRef = useRef<HTMLFormElement>(null);
   const suggestionRequestIdRef = useRef(0);
   const isSearchExpanded = isSearchOpen && !isTabletLandscape;
-  const isSearchFieldVisible = isSearchOpen || isTabletLandscape;
+  const isSearchFieldVisible = isSearchOpen || isTabletLandscape || isMobilePortrait;
 
   useEffect(() => {
     const mediaQuery = window.matchMedia(tabletLandscapeMediaQuery);
@@ -88,6 +90,15 @@ export function Header() {
     mediaQuery.addEventListener("change", updateTabletLandscape);
 
     return () => mediaQuery.removeEventListener("change", updateTabletLandscape);
+  }, []);
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia(mobilePortraitMediaQuery);
+    const updateMobilePortrait = () => setIsMobilePortrait(mediaQuery.matches);
+    updateMobilePortrait();
+    mediaQuery.addEventListener("change", updateMobilePortrait);
+
+    return () => mediaQuery.removeEventListener("change", updateMobilePortrait);
   }, []);
 
   useEffect(() => {
@@ -247,12 +258,12 @@ export function Header() {
   return (
     <>
     <header id="site-header" className="sticky top-0 z-50 border-b border-[#173c2b] bg-[#234b36] text-white shadow-md backdrop-blur">
-      <div className={`header-main-row mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-x-4 gap-y-2 px-4 py-4 sm:px-6 lg:flex-nowrap lg:gap-6 lg:px-8 xl:max-w-none xl:px-6 ${isSearchExpanded ? "landscape-search-expanded" : ""}`}>
+      <div className={`header-main-row mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-x-4 gap-y-2 px-4 py-4 sm:px-6 lg:flex-wrap lg:gap-6 lg:px-8 xl:max-w-none xl:px-6 ${isSearchExpanded ? "landscape-search-expanded" : ""}`}>
         <div className="header-brand-row relative order-1 flex w-full items-center justify-between lg:contents">
           <Link
             href="/"
             aria-label={storeInfo.name}
-            className={`header-brand-link flex shrink-0 items-center gap-3 lg:order-1 lg:mr-auto ${isSearchExpanded ? "hidden lg:flex" : ""}`}
+            className={`header-brand-link flex shrink-0 items-center gap-3 lg:order-1 lg:mr-0 ${isSearchExpanded ? "hidden lg:flex" : ""}`}
           >
             <span className="logo-mark-backdrop relative block h-14 w-14 shrink-0 overflow-hidden rounded-full bg-white">
               <Image
@@ -275,8 +286,8 @@ export function Header() {
             onSubmit={submitSearch}
             className={`flex h-11 items-center border-b transition-[width,border-color] duration-300 ease-out lg:order-3 ${
               isSearchExpanded
-                ? "absolute left-0 right-12 top-1/2 z-[60] w-auto -translate-y-1/2 gap-2 border-white/80 bg-[#234b36] lg:static lg:z-auto lg:w-[min(18rem,22vw)] lg:shrink lg:translate-y-0 lg:rounded-full lg:border-white/70 lg:bg-white lg:px-3 lg:shadow-md"
-                : "hidden w-11 justify-center border-transparent lg:relative lg:order-3 lg:flex lg:w-[min(18rem,22vw)] lg:shrink lg:justify-start lg:rounded-full lg:border-white/30 lg:bg-white lg:px-3 lg:shadow-md"
+                ? "absolute left-0 right-12 top-1/2 z-[60] w-auto -translate-y-1/2 gap-2 border-white/80 bg-[#234b36] lg:static lg:z-auto lg:order-6 lg:basis-full lg:mx-auto lg:w-full lg:max-w-xl lg:shrink-0 lg:translate-y-0 lg:rounded-full lg:border-white/70 lg:bg-white lg:px-3 lg:shadow-md"
+                : "hidden w-11 justify-center border-transparent lg:relative lg:order-6 lg:flex lg:basis-full lg:mx-auto lg:w-full lg:max-w-xl lg:shrink-0 lg:justify-start lg:rounded-full lg:border-white/30 lg:bg-white lg:px-3 lg:shadow-md"
             }`}
           >
             {isSearchFieldVisible ? (
@@ -485,12 +496,10 @@ export function Header() {
         <Link
           href="/flash-sale"
           aria-label={`${t("Flash Sale")}. ${t("Ends in")} ${countdownText}`}
-          className={`flash-sale-flash relative isolate order-3 w-full items-center justify-center gap-2 overflow-hidden rounded-2xl border px-3 py-2 transition hover:!border-[#fecaca] hover:!bg-[#991b1b] sm:order-none sm:w-auto lg:order-2 lg:min-w-max lg:flex-none lg:flex-col lg:gap-1 ${
-            isSearchExpanded ? "hidden" : "inline-flex"
-          } ${isSearchOpen ? "lg:flex-col lg:gap-1 lg:px-2 lg:py-2" : ""}`}
+          className="flash-sale-flash relative isolate order-3 inline-flex w-full items-center justify-center gap-2 overflow-hidden rounded-2xl border px-3 py-2 transition hover:!border-[#fecaca] hover:!bg-[#991b1b] sm:order-none sm:w-auto lg:order-2 lg:mx-auto lg:min-w-max lg:flex-none lg:flex-row lg:items-center lg:self-center lg:gap-3 lg:px-5"
           style={{ backgroundColor: "#b91c1c", borderColor: "#fca5a5", color: "#fff" }}
         >
-          <span className="relative z-20 inline-flex items-center gap-2 lg:w-full lg:justify-center">
+          <span className="relative z-20 inline-flex items-center gap-2 lg:w-auto lg:justify-start">
             <svg
               aria-hidden="true"
               className="flash-sale-fire relative z-20 shrink-0"
@@ -542,7 +551,7 @@ export function Header() {
           </span>
         </Link>
 
-        <nav className="hidden items-center justify-center gap-[23px] whitespace-nowrap text-sm font-medium text-white lg:order-4 lg:flex">
+        <nav className="hidden items-center justify-center gap-[8px] whitespace-nowrap text-sm font-medium text-white lg:order-4 lg:flex">
           <Link href="/#home" onClick={(event) => navigateToHomeSection(event, "home")} className="nav-underline-link px-[10px] text-lg font-bold text-white hover:!text-amber-200">{t("Home")}</Link>
           <Link href="/#homepage-products-section" onClick={(event) => navigateToHomeSection(event, "homepage-products-section")} className="nav-underline-link px-[10px] text-lg font-bold text-white hover:!text-amber-200">{t("Pickle")}</Link>
           <Link href="/#homepage-balachao-section" onClick={(event) => navigateToHomeSection(event, "homepage-balachao-section")} className="nav-underline-link px-[10px] text-lg font-bold text-white hover:!text-amber-200">{t("Balachao")}</Link>

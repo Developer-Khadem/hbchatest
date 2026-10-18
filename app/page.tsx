@@ -64,17 +64,16 @@ function CategoryJar({
         className="absolute left-1/2 top-[10px] z-20 h-[13px] w-[70px] -translate-x-1/2 rounded-b-md border-x border-b border-amber-900/25 bg-gradient-to-r from-amber-100 via-amber-300 to-amber-100 shadow-sm"
       />
       <span
-        className={`absolute inset-x-1 bottom-0 top-[17px] z-10 isolate overflow-hidden rounded-[25px_25px_12px_12px] border-2 bg-gradient-to-br from-white/80 via-amber-50/30 to-amber-100/55 shadow-[inset_7px_0_10px_rgba(255,255,255,0.58),inset_-5px_0_10px_rgba(120,53,15,0.12),0_12px_18px_rgba(15,23,42,0.2)] transition duration-200 ${
+        className={`absolute inset-x-1 bottom-0 top-[17px] z-10 isolate overflow-hidden rounded-[25px_25px_12px_12px] border-2 bg-gradient-to-br from-white/80 via-amber-50/30 to-amber-100/55 shadow-[inset_-5px_0_10px_rgba(120,53,15,0.12),0_12px_18px_rgba(15,23,42,0.2)] transition duration-200 ${
           selected ? "border-red-500 ring-2 ring-red-500/30 ring-offset-2" : "border-white/90"
         }`}
       >
         <Image src={image} alt="" fill sizes="(min-width: 640px) 192px, 176px" unoptimized={image.startsWith("/")} className="object-cover" />
         <span aria-hidden="true" className="absolute inset-0 bg-gradient-to-b from-white/25 via-transparent to-slate-950/60" />
-        <span aria-hidden="true" className="absolute bottom-4 left-2 top-3 w-1 rounded-full bg-white/65 shadow-[0_0_8px_rgba(255,255,255,0.8)]" />
         <span aria-hidden="true" className="absolute inset-y-2 right-2 w-2 rounded-full bg-white/15 blur-[2px]" />
         <span className="landscape-category-label holographic-category-label absolute inset-x-2 top-1/2 z-10 flex -translate-y-1/2 flex-col items-center px-1.5 py-2 text-center">
           {brandLabel ? (
-            <span className="holographic-brand mb-1 bg-gradient-to-r from-cyan-200 via-fuchsia-200 to-amber-100 bg-clip-text text-[10px] font-black uppercase tracking-[0.16em] text-transparent drop-shadow-[0_0_5px_rgba(125,211,252,0.9)] sm:text-xs">
+            <span className="holographic-brand mb-1 text-[10px] font-black uppercase tracking-[0.16em] text-white sm:text-xs">
               {brandLabel}
             </span>
           ) : null}

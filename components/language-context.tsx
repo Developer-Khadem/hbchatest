@@ -87,7 +87,7 @@ const translations = {
   "Chemical-free": "কেমিক্যাল মুক্ত",
   "Preservative-free": "প্রিজারভেটিভ মুক্ত",
   "Artificial color-free": "কৃত্রিম রং মুক্ত",
-  "Delivery across Bangladesh": "সারাদেশ ডেলিভারী",
+  "Delivery across Bangladesh": "সারাদেশে ডেলিভারী",
   "100% pure ingredients": "১০০% বিশুদ্ধ উপকরণ",
   "Homemade taste": "ঘরোয়া স্বাদ",
   "WhatsApp chat": "হোয়াটসঅ্যাপে যোগাযোগ করুন",
