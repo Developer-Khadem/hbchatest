@@ -117,14 +117,16 @@ export async function POST(request: Request) {
   const transactionId = paymentMethod === "DIGITAL_WALLET"
     ? readText(body.transactionId, 100)
     : null;
-  const payerPhone = paymentMethod === "DIGITAL_WALLET" && typeof body.payerPhone === "string"
+  const payerPhone = paymentMethod === "DIGITAL_WALLET" &&
+    typeof body.payerPhone === "string" &&
+    body.payerPhone.trim()
     ? normalizeBangladeshPhone(body.payerPhone)
     : null;
   if (
     paymentMethod === "DIGITAL_WALLET" &&
     (!transactionId || transactionId.length < 4 || !payerPhone || !isValidBangladeshPhone(payerPhone))
   ) {
-    return jsonError("Enter the wallet transaction ID and a valid payer phone number.", 400);
+    return jsonError("Enter a valid Nagad transaction ID and payer phone number.", 400);
   }
 
   try {

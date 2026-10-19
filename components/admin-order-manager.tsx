@@ -311,8 +311,8 @@ export function AdminOrderManager() {
                     <p className="flex justify-between"><span>{t("Delivery fee")}</span><span>৳{order.deliveryFee}</span></p>
                     <p className="flex justify-between font-black"><span>{t("Total")}</span><span>৳{order.total}</span></p>
                   </div>
-                  <p className="mt-2 text-xs text-slate-600">{t(order.paymentMethod)} · {t(order.paymentStatus)}</p>
-                  {order.transactionId ? <p className="mt-1 text-xs text-slate-600">{t("Transaction ID")}: {order.transactionId} · {t("Payer mobile number")}: {order.payerPhone}</p> : null}
+                  <p className="mt-2 text-xs text-slate-600">{t(order.paymentMethod === "DIGITAL_WALLET" ? "Nagad" : order.paymentMethod)} · {t(order.paymentStatus)}</p>
+                  {order.transactionId ? <p className="mt-1 text-xs text-slate-600">{t("Transaction ID")}: {order.transactionId}{order.payerPhone ? ` · ${t("Payer mobile number")}: ${order.payerPhone}` : ""}</p> : null}
                   {order.paymentMethod === "CASH_ON_DELIVERY" ? <p className="mt-1 text-sm font-bold text-emerald-800">{t("COD collect")}: ৳{order.total}</p> : null}
                 </div>
               </div>

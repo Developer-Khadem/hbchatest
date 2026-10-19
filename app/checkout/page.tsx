@@ -188,23 +188,28 @@ export default function CheckoutPage() {
 
             <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
               <div className="mb-2 text-sm font-semibold text-slate-700">{t("Payment Method")}</div>
-              <div className="flex flex-wrap gap-3">
-                <label className="rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700">
-                  <input type="radio" name="payment" value="CASH_ON_DELIVERY" checked={paymentMethod === "CASH_ON_DELIVERY"} onChange={() => setPaymentMethod("CASH_ON_DELIVERY")} className="mr-2" /> {t("Cash on Delivery")}
+              <div className="flex flex-col gap-3">
+                <label className="flex min-w-0 items-center justify-center rounded-full border border-slate-300 bg-white px-3 py-2 text-center text-sm font-semibold text-slate-700">
+                  <input type="radio" name="payment" value="DIGITAL_WALLET" checked={paymentMethod === "DIGITAL_WALLET"} onChange={() => setPaymentMethod("DIGITAL_WALLET")} className="mr-2 shrink-0" /> {t("Nagad")}
                 </label>
-                <label className="rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700">
-                  <input type="radio" name="payment" value="DIGITAL_WALLET" checked={paymentMethod === "DIGITAL_WALLET"} onChange={() => setPaymentMethod("DIGITAL_WALLET")} className="mr-2" /> {t("Digital Wallet")}
+                <label className="flex min-w-0 items-center justify-center rounded-full border border-slate-300 bg-white px-3 py-2 text-center text-sm font-semibold text-slate-700">
+                  <input type="radio" name="payment" value="CASH_ON_DELIVERY" checked={paymentMethod === "CASH_ON_DELIVERY"} onChange={() => setPaymentMethod("CASH_ON_DELIVERY")} className="mr-2 shrink-0" /> {t("Cash on Delivery")}
                 </label>
               </div>
               {paymentMethod === "DIGITAL_WALLET" ? (
-                <div className="mt-4 grid gap-4 sm:grid-cols-2">
-                  <div>
-                    <label className="mb-2 block text-sm font-semibold text-slate-700">{t("Wallet transaction ID")}</label>
-                    <input required name="transactionId" maxLength={100} className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-red-300" />
-                  </div>
+                <div className="mt-4 space-y-4">
+                  <p className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900">
+                    {t("Pay with Nagad to")}{" "}
+                    <a href="tel:01757121627" className="font-black underline">01757121627</a>
+                    . {t("Enter the transaction ID after payment.")}
+                  </p>
                   <div>
                     <label className="mb-2 block text-sm font-semibold text-slate-700">{t("Payer mobile number")}</label>
-                    <input required name="payerPhone" type="tel" maxLength={20} className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-red-300" placeholder="01XXXXXXXXX" />
+                    <input required name="payerPhone" type="tel" autoComplete="tel" maxLength={20} className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-red-300" placeholder="01XXXXXXXXX" />
+                  </div>
+                  <div>
+                    <label className="mb-2 block text-sm font-semibold text-slate-700">{t("Nagad transaction ID")}</label>
+                    <input required name="transactionId" maxLength={100} className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-red-300" />
                   </div>
                 </div>
               ) : null}
