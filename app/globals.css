@@ -705,8 +705,8 @@ html[data-theme="dark"] [class~="bg-red-100"] {
   }
 
   #home .landscape-hero-control:first-of-type {
-    right: auto;
-    left: 0.5rem;
+    right: 3.25rem;
+    left: auto;
   }
 
   #home .landscape-hero-control:last-of-type {
