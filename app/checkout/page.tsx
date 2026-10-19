@@ -6,6 +6,7 @@ import { type FormEvent, useState } from "react";
 import { useCart } from "@/components/cart-context";
 import { useLanguage } from "@/components/language-context";
 import bangladeshLocations from "@/lib/bangladesh-locations.json";
+import { localizeBangladeshLocation } from "@/lib/bangladesh-location-localization";
 import { localizeProduct } from "@/lib/localization";
 import { getProductImageSource } from "@/lib/product-images";
 import { districtDeliveryFees } from "@/lib/site-data";
@@ -13,7 +14,6 @@ import { districtDeliveryFees } from "@/lib/site-data";
 export default function CheckoutPage() {
   const { items, products, subtotal, clearCart, isProductsLoading, productsError } = useCart();
   const { language, t } = useLanguage();
-  const [division, setDivision] = useState("");
   const [district, setDistrict] = useState("");
   const [thana, setThana] = useState("");
   const [note, setNote] = useState("");
@@ -23,7 +23,7 @@ export default function CheckoutPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
 
-  const districts = bangladeshLocations.divisions.find((entry) => entry.name === division)?.districts ?? [];
+  const districts = bangladeshLocations.divisions.flatMap((entry) => entry.districts);
   const thanas = districts.find((entry) => entry.name === district)?.upazilas ?? [];
 
   const cartProducts = items
@@ -57,10 +57,8 @@ export default function CheckoutPage() {
         body: JSON.stringify({
           customer: formData.get("customer"),
           phone: formData.get("phone"),
-          division: formData.get("division"),
           district: formData.get("district"),
           upazila: formData.get("upazila"),
-          area: formData.get("area"),
           road: formData.get("road"),
           address: formData.get("address"),
           note,
@@ -136,26 +134,7 @@ export default function CheckoutPage() {
               </div>
             </div>
 
-            <div className="grid gap-5 sm:grid-cols-3">
-              <div>
-                <label className="mb-2 block text-sm font-semibold text-slate-700">{t("Division")}</label>
-                <select
-                  required
-                  name="division"
-                  value={division}
-                  onChange={(event) => {
-                    setDivision(event.target.value);
-                    setDistrict("");
-                    setThana("");
-                  }}
-                  className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none transition focus:border-red-300"
-                >
-                  <option value="" disabled>{t("Select division")}</option>
-                  {bangladeshLocations.divisions.map((entry) => (
-                    <option key={entry.name} value={entry.name}>{entry.name}</option>
-                  ))}
-                </select>
-              </div>
+            <div className="grid gap-5 sm:grid-cols-2">
               <div>
                 <label className="mb-2 block text-sm font-semibold text-slate-700">{t("District")}</label>
                 <select
@@ -166,12 +145,11 @@ export default function CheckoutPage() {
                     setDistrict(event.target.value);
                     setThana("");
                   }}
-                  disabled={!division}
                   className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none transition focus:border-red-300"
                 >
                   <option value="" disabled>{t("Select district")}</option>
                   {districts.map((entry) => (
-                    <option key={entry.name} value={entry.name}>{entry.name}</option>
+                    <option key={entry.name} value={entry.name}>{localizeBangladeshLocation(entry.name, language)}</option>
                   ))}
                 </select>
               </div>
@@ -187,21 +165,15 @@ export default function CheckoutPage() {
                 >
                   <option value="" disabled>{t("Select thana / upazila")}</option>
                   {thanas.map((entry) => (
-                    <option key={entry} value={entry}>{entry}</option>
+                    <option key={entry} value={entry}>{localizeBangladeshLocation(entry, language)}</option>
                   ))}
                 </select>
               </div>
             </div>
 
-            <div className="grid gap-5 sm:grid-cols-2">
-              <div>
-                <label className="mb-2 block text-sm font-semibold text-slate-700">{t("Union / Area")}</label>
-                <input name="area" maxLength={100} autoComplete="address-level3" className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none transition focus:border-red-300" placeholder={t("Union / Area")} />
-              </div>
-              <div>
-                <label className="mb-2 block text-sm font-semibold text-slate-700">{t("Village / Road")}</label>
-                <input name="road" maxLength={200} autoComplete="street-address" className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none transition focus:border-red-300" placeholder={t("Village / Road / House")} />
-              </div>
+            <div>
+              <label className="mb-2 block text-sm font-semibold text-slate-700">{t("Village / Road")}</label>
+              <input name="road" maxLength={200} autoComplete="street-address" className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none transition focus:border-red-300" placeholder={t("Village / Road / House")} />
             </div>
 
             <div>

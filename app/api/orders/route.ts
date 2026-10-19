@@ -96,13 +96,17 @@ export async function POST(request: Request) {
 
   if (!customer || customer.length < 2) return jsonError("Enter your name (2-100 characters).", 400);
   if (!isValidBangladeshPhone(phone)) return jsonError("Enter a valid 11-digit Bangladesh mobile number.", 400);
-  if (!division || !district || !upazila || !address || address.length < 5) {
+  if (!district || !upazila || !address || address.length < 5) {
     return jsonError("Complete your delivery address.", 400);
   }
-  const divisionEntry = bangladeshLocations.divisions.find((entry) => entry.name === division);
-  const districtEntry = divisionEntry?.districts.find((entry) => entry.name === district);
-  if (!districtEntry || !districtEntry.upazilas.includes(upazila)) {
-    return jsonError("Choose a valid division, district, and upazila.", 400);
+  const matchingDivisions = division
+    ? bangladeshLocations.divisions.filter((entry) => entry.name === division)
+    : bangladeshLocations.divisions;
+  const divisionEntry = matchingDivisions.find((entry) =>
+    entry.districts.some((entry) => entry.name === district && entry.upazilas.includes(upazila)),
+  );
+  if (!divisionEntry) {
+    return jsonError("Choose a valid district and upazila.", 400);
   }
   if (!note) return jsonError("Order note must be 1000 characters or fewer.", 400);
   if (!items) return jsonError("Your cart is empty or contains invalid items.", 400);
@@ -173,7 +177,7 @@ export async function POST(request: Request) {
         orderNumber,
         customer,
         phone,
-        division,
+        division: divisionEntry.name,
         district,
         upazila,
         area,
