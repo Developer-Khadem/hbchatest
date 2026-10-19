@@ -12,7 +12,7 @@ export async function GET(request: Request) {
   }
 
   try {
-    const products = await searchStoreProducts(query, MAX_SUGGESTIONS, "name");
+    const products = await searchStoreProducts(query, MAX_SUGGESTIONS);
     return Response.json(
       { products },
       {
