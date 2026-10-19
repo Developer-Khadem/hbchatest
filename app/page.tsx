@@ -73,11 +73,11 @@ function CategoryJar({
         <span aria-hidden="true" className="absolute inset-y-2 right-2 w-2 rounded-full bg-white/15 blur-[2px]" />
         <span className="landscape-category-label holographic-category-label absolute inset-x-2 top-1/2 z-10 flex -translate-y-1/2 flex-col items-center px-1.5 py-2 text-center">
           {brandLabel ? (
-            <span className="holographic-brand mb-1 text-[10px] font-black uppercase tracking-[0.16em] text-white sm:text-xs">
+            <span className="holographic-brand mb-1 text-xs font-black uppercase tracking-[0.16em] text-white sm:text-sm">
               {brandLabel}
             </span>
           ) : null}
-          <span className="holographic-category-text text-sm font-extrabold leading-tight text-white sm:text-base">{label}</span>
+          <span className="holographic-category-text text-base font-extrabold leading-tight text-white sm:text-lg">{label}</span>
         </span>
       </span>
     </span>
@@ -213,7 +213,7 @@ export default function HomePage() {
         id="home"
         aria-label={t("Featured offers")}
         aria-roledescription={t("carousel")}
-        className="relative isolate aspect-[1500/636] h-auto min-h-0 w-full scroll-mt-24 overflow-hidden bg-slate-950 sm:aspect-auto sm:h-[min(56vh,520px)] sm:min-h-[420px]"
+        className="relative isolate aspect-[1500/636] h-auto min-h-0 w-full scroll-mt-24 overflow-hidden bg-slate-950 sm:aspect-auto sm:h-[min(56vh,520px)] sm:min-h-[420px] lg:h-[calc(min(56vh,520px)+50px)] lg:min-h-[470px]"
         onMouseEnter={() => setIsSliderPaused(true)}
         onMouseLeave={() => setIsSliderPaused(false)}
         onFocusCapture={() => setIsSliderPaused(true)}

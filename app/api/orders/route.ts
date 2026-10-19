@@ -187,6 +187,7 @@ export async function POST(request: Request) {
         address,
         customerNote: note || null,
         subtotal,
+        discount: 0,
         deliveryFee,
         total: subtotal + deliveryFee,
         status,
@@ -202,7 +203,22 @@ export async function POST(request: Request) {
           },
         },
       },
-      select: { id: true, orderNumber: true, createdAt: true, total: true },
+      select: {
+        orderNumber: true,
+        customer: true,
+        phone: true,
+        division: true,
+        district: true,
+        upazila: true,
+        road: true,
+        address: true,
+        subtotal: true,
+        discount: true,
+        deliveryFee: true,
+        total: true,
+        createdAt: true,
+        orderItems: { select: { id: true, name: true, quantity: true, unitPrice: true } },
+      },
     });
 
     return Response.json(
