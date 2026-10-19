@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ProductCard } from "@/components/product-card";
 import { useLanguage } from "@/components/language-context";
 import { localizeProduct } from "@/lib/localization";
+import { getProductImageSource } from "@/lib/product-images";
 import type { Product } from "@/lib/site-data";
 
 export function ProductDetailView({
@@ -29,7 +30,7 @@ export function ProductDetailView({
         <div className="space-y-4">
           <div className="overflow-hidden rounded-[2rem] border border-slate-200 bg-white p-3 shadow-sm">
             <Image
-              src={localizedProduct.image}
+              src={getProductImageSource(localizedProduct.image)}
               alt={localizedProduct.name}
               width={1200}
               height={520}
@@ -41,7 +42,7 @@ export function ProductDetailView({
             {localizedProduct.gallery.map((image, index) => (
               <div key={index} className="overflow-hidden rounded-2xl border border-slate-200 bg-white p-2 shadow-sm">
                 <Image
-                  src={image}
+                  src={getProductImageSource(image)}
                   alt={`${localizedProduct.name} ${t("view")} ${index + 1}`}
                   width={400}
                   height={128}

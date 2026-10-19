@@ -28,9 +28,16 @@ model Product {
 
 model Order {
   id              String          @id @default(cuid())
+  orderNumber     String?         @unique
   customer        String
   phone           String
   address         String
+  division        String?
+  district        String?
+  upazila         String?
+  area             String?
+  road             String?
+  customerNote     String?
   subtotal        Int
   deliveryFee     Int             @default(60)
   total           Int

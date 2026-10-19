@@ -8,6 +8,7 @@ import { MessageCircle, Star } from "lucide-react";
 import { useCart } from "@/components/cart-context";
 import { useLanguage } from "@/components/language-context";
 import { localizeProduct } from "@/lib/localization";
+import { getProductImageSource } from "@/lib/product-images";
 import { storeInfo, type Product } from "@/lib/site-data";
 import { getWhatsAppUrl } from "@/lib/whatsapp";
 
@@ -77,12 +78,6 @@ function registerProductName(element: HTMLAnchorElement) {
     }
     scheduleProductNameSizing();
   };
-}
-
-function getProductImageSource(image: string) {
-  return image.startsWith("local-webp:")
-    ? `data:image/webp;base64,${image.slice("local-webp:".length)}`
-    : image;
 }
 
 const temporaryProductWeights: Record<string, 250 | 300> = {

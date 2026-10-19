@@ -7,6 +7,7 @@ import { useCart } from "@/components/cart-context";
 import { useLanguage } from "@/components/language-context";
 import bangladeshLocations from "@/lib/bangladesh-locations.json";
 import { localizeProduct } from "@/lib/localization";
+import { getProductImageSource } from "@/lib/product-images";
 import { districtDeliveryFees } from "@/lib/site-data";
 
 export default function CheckoutPage() {
@@ -16,7 +17,11 @@ export default function CheckoutPage() {
   const [district, setDistrict] = useState("");
   const [thana, setThana] = useState("");
   const [note, setNote] = useState("");
+  const [paymentMethod, setPaymentMethod] = useState("CASH_ON_DELIVERY");
   const [orderPlaced, setOrderPlaced] = useState(false);
+  const [orderNumber, setOrderNumber] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState("");
 
   const districts = bangladeshLocations.divisions.find((entry) => entry.name === division)?.districts ?? [];
   const thanas = districts.find((entry) => entry.name === district)?.upazilas ?? [];
@@ -38,10 +43,63 @@ export default function CheckoutPage() {
     : 0;
   const payableTotal = subtotal + currentFee;
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    setOrderPlaced(true);
-    clearCart();
+    if (isSubmitting) return;
+
+    const formData = new FormData(event.currentTarget);
+    setIsSubmitting(true);
+    setSubmitError("");
+    try {
+      const response = await fetch("/api/orders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          customer: formData.get("customer"),
+          phone: formData.get("phone"),
+          division: formData.get("division"),
+          district: formData.get("district"),
+          upazila: formData.get("upazila"),
+          area: formData.get("area"),
+          road: formData.get("road"),
+          address: formData.get("address"),
+          note,
+          paymentMethod,
+          transactionId: formData.get("transactionId"),
+          payerPhone: formData.get("payerPhone"),
+          items: items.map(({ productId, quantity }) => ({ productId, quantity })),
+        }),
+      });
+      const result: unknown = await response.json();
+      if (
+        !response.ok ||
+        typeof result !== "object" ||
+        result === null ||
+        !("order" in result) ||
+        typeof result.order !== "object" ||
+        result.order === null ||
+        !("orderNumber" in result.order) ||
+        typeof result.order.orderNumber !== "string"
+      ) {
+        const message =
+          typeof result === "object" &&
+          result !== null &&
+          "error" in result &&
+          typeof result.error === "string"
+            ? result.error
+            : "Unable to place your order right now. Please try again.";
+        throw new Error(message);
+      }
+
+      setOrderNumber(result.order.orderNumber);
+      setOrderPlaced(true);
+      clearCart();
+    } catch (error) {
+      console.error("Unable to submit checkout order", error);
+      setSubmitError(error instanceof Error ? error.message : "Unable to place your order right now. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -54,9 +112,10 @@ export default function CheckoutPage() {
       {orderPlaced ? (
         <div className="rounded-[2rem] border border-emerald-200 bg-emerald-50 p-8 text-center shadow-sm">
           <h2 className="text-3xl font-black text-emerald-700">{t("Order placed successfully!")}</h2>
-          <p className="mt-3 text-lg text-emerald-800">{t("Your order ID: HBC-2408. Confirmation SMS will be sent shortly.")}</p>
-          <Link href="/track" className="mt-6 inline-flex rounded-full bg-emerald-600 px-6 py-3 text-sm font-bold text-white">
-            {t("Track Order")}
+          <p className="mt-3 text-lg text-emerald-800">{t("Your order number is")} <strong>{orderNumber}</strong></p>
+          <p className="mt-2 text-sm text-emerald-700">{t("We have received your order and will contact you to confirm delivery.")}</p>
+          <Link href="/" className="mt-6 inline-flex rounded-full bg-emerald-600 px-6 py-3 text-sm font-bold text-white">
+            {t("Continue shopping")}
           </Link>
         </div>
       ) : isProductsLoading ? (
@@ -69,11 +128,11 @@ export default function CheckoutPage() {
             <div className="grid gap-5 sm:grid-cols-2">
               <div>
                 <label className="mb-2 block text-sm font-semibold text-slate-700">{t("Customer Name")}</label>
-                <input required className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none ring-0 transition focus:border-red-300" placeholder={t("Your full name")} />
+                <input required name="customer" autoComplete="name" maxLength={100} className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none ring-0 transition focus:border-red-300" placeholder={t("Your full name")} />
               </div>
               <div>
                 <label className="mb-2 block text-sm font-semibold text-slate-700">{t("Mobile Number")}</label>
-                <input required type="tel" className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none transition focus:border-red-300" placeholder="01XXXXXXXXX" />
+                <input required name="phone" type="tel" autoComplete="tel" maxLength={20} className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none transition focus:border-red-300" placeholder="01XXXXXXXXX" />
               </div>
             </div>
 
@@ -82,6 +141,7 @@ export default function CheckoutPage() {
                 <label className="mb-2 block text-sm font-semibold text-slate-700">{t("Division")}</label>
                 <select
                   required
+                  name="division"
                   value={division}
                   onChange={(event) => {
                     setDivision(event.target.value);
@@ -100,6 +160,7 @@ export default function CheckoutPage() {
                 <label className="mb-2 block text-sm font-semibold text-slate-700">{t("District")}</label>
                 <select
                   required
+                  name="district"
                   value={district}
                   onChange={(event) => {
                     setDistrict(event.target.value);
@@ -118,6 +179,7 @@ export default function CheckoutPage() {
                 <label className="mb-2 block text-sm font-semibold text-slate-700">{t("Thana / Upazila")}</label>
                 <select
                   required
+                  name="upazila"
                   value={thana}
                   onChange={(event) => setThana(event.target.value)}
                   disabled={!district}
@@ -134,38 +196,52 @@ export default function CheckoutPage() {
             <div className="grid gap-5 sm:grid-cols-2">
               <div>
                 <label className="mb-2 block text-sm font-semibold text-slate-700">{t("Union / Area")}</label>
-                <input className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none transition focus:border-red-300" placeholder={t("Union / Area")} />
+                <input name="area" maxLength={100} autoComplete="address-level3" className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none transition focus:border-red-300" placeholder={t("Union / Area")} />
               </div>
               <div>
                 <label className="mb-2 block text-sm font-semibold text-slate-700">{t("Village / Road")}</label>
-                <input className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none transition focus:border-red-300" placeholder={t("Village / Road / House")} />
+                <input name="road" maxLength={200} autoComplete="street-address" className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none transition focus:border-red-300" placeholder={t("Village / Road / House")} />
               </div>
             </div>
 
             <div>
               <label className="mb-2 block text-sm font-semibold text-slate-700">{t("Detailed Address")}</label>
-              <textarea className="min-h-28 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none transition focus:border-red-300" placeholder={t("House number, road, landmark, etc.")} />
+              <textarea required name="address" minLength={5} maxLength={500} autoComplete="street-address" className="min-h-28 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none transition focus:border-red-300" placeholder={t("House number, road, landmark, etc.")} />
             </div>
 
             <div>
               <label className="mb-2 block text-sm font-semibold text-slate-700">{t("Order Note")}</label>
-              <textarea value={note} onChange={(event) => setNote(event.target.value)} className="min-h-24 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none transition focus:border-red-300" placeholder={t("Special instructions for kitchen / rider")} />
+              <textarea value={note} onChange={(event) => setNote(event.target.value)} maxLength={1000} className="min-h-24 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none transition focus:border-red-300" placeholder={t("Special instructions for kitchen / rider")} />
             </div>
 
             <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
               <div className="mb-2 text-sm font-semibold text-slate-700">{t("Payment Method")}</div>
               <div className="flex flex-wrap gap-3">
                 <label className="rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700">
-                  <input type="radio" name="payment" defaultChecked className="mr-2" /> {t("Cash on Delivery")}
+                  <input type="radio" name="payment" value="CASH_ON_DELIVERY" checked={paymentMethod === "CASH_ON_DELIVERY"} onChange={() => setPaymentMethod("CASH_ON_DELIVERY")} className="mr-2" /> {t("Cash on Delivery")}
                 </label>
                 <label className="rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700">
-                  <input type="radio" name="payment" className="mr-2" /> {t("Digital Wallet")}
+                  <input type="radio" name="payment" value="DIGITAL_WALLET" checked={paymentMethod === "DIGITAL_WALLET"} onChange={() => setPaymentMethod("DIGITAL_WALLET")} className="mr-2" /> {t("Digital Wallet")}
                 </label>
               </div>
+              {paymentMethod === "DIGITAL_WALLET" ? (
+                <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                  <div>
+                    <label className="mb-2 block text-sm font-semibold text-slate-700">{t("Wallet transaction ID")}</label>
+                    <input required name="transactionId" maxLength={100} className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-red-300" />
+                  </div>
+                  <div>
+                    <label className="mb-2 block text-sm font-semibold text-slate-700">{t("Payer mobile number")}</label>
+                    <input required name="payerPhone" type="tel" maxLength={20} className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-red-300" placeholder="01XXXXXXXXX" />
+                  </div>
+                </div>
+              ) : null}
             </div>
 
-            <button type="submit" className="w-full rounded-full bg-slate-900 px-5 py-3 text-sm font-bold text-white transition hover:bg-red-600">
-              {t("Confirm Order")}
+            {submitError ? <p role="alert" className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm font-semibold text-red-700">{t(submitError)}</p> : null}
+
+            <button type="submit" disabled={isSubmitting || cartProducts.length === 0} className="w-full rounded-full bg-slate-900 px-5 py-3 text-sm font-bold text-white transition hover:bg-red-600 disabled:cursor-not-allowed disabled:opacity-60">
+              {t(isSubmitting ? "Submitting order..." : "Confirm Order")}
             </button>
           </form>
 
@@ -175,7 +251,7 @@ export default function CheckoutPage() {
               {cartProducts.map((product) => (
                 <div key={product.id} className="flex items-center gap-3 rounded-2xl bg-slate-50 p-3">
                   <Image
-                    src={product.image}
+                    src={getProductImageSource(product.image)}
                     alt={product.name}
                     width={56}
                     height={56}

@@ -759,6 +759,7 @@ html[data-theme="dark"] [class~="bg-red-100"] {
     font-size: 0.625rem;
     line-height: 1.2;
     white-space: normal;
+    text-align: left;
   }
 
   #site-header .flash-sale-flash {
@@ -839,7 +840,17 @@ html[data-theme="dark"] [class~="bg-red-100"] {
 
 @media (orientation: portrait) and (max-width: 379px) {
   #site-header .header-brand-link > span:last-child {
-    max-width: max(2rem, calc((100vw - 12.125rem) / 2));
+    max-width: none;
+  }
+
+  #site-header .header-brand-link > span:last-child > span:first-child {
+    max-width: none;
+    overflow: visible;
+    text-overflow: clip;
+  }
+
+  #site-header .header-brand-link > span:last-child > span:last-child {
+    max-width: none;
   }
 
   #site-header .flash-sale-flash {

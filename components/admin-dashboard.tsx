@@ -10,15 +10,12 @@ import {
   CheckCircle2,
   CircleDollarSign,
   ClipboardList,
-  Download,
   LifeBuoy,
   Menu,
   MessageSquareText,
   Package,
   PackageCheck,
-  Printer,
   RotateCcw,
-  Search,
   ShieldCheck,
   ShoppingBag,
   Star,
@@ -28,12 +25,14 @@ import {
   X,
 } from "lucide-react";
 import Image from "next/image";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { AdminProductManager } from "@/components/admin-product-manager";
+import { AdminOrderManager } from "@/components/admin-order-manager";
 import { AdminSupportTicketManager } from "@/components/admin-support-ticket-manager";
 import { useLanguage } from "@/components/language-context";
-import { products, recentOrders, storeInfo } from "@/lib/site-data";
+import { getProductImageSource } from "@/lib/product-images";
+import { products } from "@/lib/site-data";
 
 const salesSeries = {
   day: {
@@ -134,21 +133,6 @@ function getProduct(slug: string) {
   return products.find((product) => product.slug === slug);
 }
 
-function downloadOrdersCsv() {
-  const rows = [
-    ["Order", "Customer", "Total (BDT)", "Status"],
-    ...recentOrders.map((order) => [order.orderId, order.customer, String(order.total), order.status]),
-  ];
-  const csv = `\uFEFF${rows.map((row) => row.map((cell) => `"${cell.replaceAll('"', '""')}"`).join(",")).join("\r\n")}`;
-  const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = "hbca-orders-demo.csv";
-  link.click();
-  URL.revokeObjectURL(url);
-}
-
 function SalesChart({ values, labels }: { values: readonly number[]; labels: readonly string[] }) {
   const points = values.map((value, index) => `${(index / (values.length - 1)) * 600},${180 - value * 1.55}`).join(" ");
 
@@ -207,21 +191,7 @@ export function AdminDashboard() {
   const router = useRouter();
   const [error, setError] = useState("");
   const [period, setPeriod] = useState<keyof typeof salesSeries>("week");
-  const [orderFilter, setOrderFilter] = useState("All statuses");
-  const [orderSearch, setOrderSearch] = useState("");
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
-  const [invoiceOrder, setInvoiceOrder] = useState<(typeof recentOrders)[number] | null>(null);
-
-  const filteredOrders = useMemo(
-    () =>
-      recentOrders.filter((order) => {
-        const matchesStatus = orderFilter === "All statuses" || order.status === orderFilter;
-        const search = orderSearch.trim().toLowerCase();
-        const matchesSearch = !search || `${order.orderId} ${order.customer}`.toLowerCase().includes(search);
-        return matchesStatus && matchesSearch;
-      }),
-    [orderFilter, orderSearch],
-  );
   const currentSales = salesSeries[period];
   const lowStockProducts = products.filter((product) => product.stock <= 20);
 
@@ -410,7 +380,7 @@ export function AdminDashboard() {
                   return (
                     <div key={item.slug} className="flex items-center gap-3 py-3">
                       <span className="grid size-7 shrink-0 place-items-center rounded-lg bg-slate-100 text-xs font-black text-slate-500">{index + 1}</span>
-                      <Image src={product.image} alt="" width={44} height={44} unoptimized className="size-11 rounded-xl object-cover" />
+                      <Image src={getProductImageSource(product.image)} alt="" width={44} height={44} unoptimized className="size-11 rounded-xl object-cover" />
                       <div className="min-w-0 flex-1">
                         <p className="truncate text-sm font-bold">{t(product.name)}</p>
                         <p className="text-xs text-slate-500">{item.sold} {t("units sold")}</p>
@@ -433,7 +403,7 @@ export function AdminDashboard() {
               <div className="mt-4 space-y-3">
                 {lowStockProducts.map((product) => (
                   <div key={product.id} className="flex items-center gap-3 rounded-xl border border-rose-100 bg-rose-50/50 p-3">
-                    <Image src={product.image} alt="" width={44} height={44} unoptimized className="size-11 rounded-xl object-cover" />
+                    <Image src={getProductImageSource(product.image)} alt="" width={44} height={44} unoptimized className="size-11 rounded-xl object-cover" />
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-bold">{t(product.name)}</p>
                       <p className="text-xs text-slate-500">{t(product.unit)}</p>
@@ -455,63 +425,7 @@ export function AdminDashboard() {
 
           <AdminSupportTicketManager />
 
-          <section id="orders" className="mt-5 scroll-mt-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm shadow-slate-900/[0.02] sm:p-6">
-            <div className="flex flex-wrap items-start justify-between gap-3">
-              <div>
-                <h2 className="text-lg font-extrabold">{t("Recent orders")}</h2>
-                <p className="mt-1 text-xs text-slate-500">{t("Review order status and customer details.")}</p>
-              </div>
-              <button type="button" onClick={downloadOrdersCsv} className="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50">
-                <Download size={15} /> {t("Export CSV")}
-              </button>
-            </div>
-            <div className="mt-4 flex flex-col gap-3 sm:flex-row">
-              <label className="relative min-w-0 flex-1">
-                <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                <input
-                  value={orderSearch}
-                  onChange={(event) => setOrderSearch(event.target.value)}
-                  placeholder={t("Search order or customer")}
-                  className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-9 pr-3 text-sm outline-none focus:border-emerald-500"
-                />
-              </label>
-              <select value={orderFilter} onChange={(event) => setOrderFilter(event.target.value)} className="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold outline-none focus:border-emerald-500">
-                <option value="All statuses">{t("All statuses")}</option>
-                {recentOrders.map((order) => <option key={order.orderId} value={order.status}>{t(order.status)}</option>)}
-              </select>
-            </div>
-            <div className="mt-4 overflow-x-auto rounded-xl border border-slate-200">
-              <table className="min-w-[620px] w-full text-left text-sm">
-                <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
-                  <tr>
-                    <th className="px-4 py-3 font-bold">{t("Order")}</th>
-                    <th className="px-4 py-3 font-bold">{t("Customer")}</th>
-                    <th className="px-4 py-3 font-bold">{t("Amount")}</th>
-                    <th className="px-4 py-3 font-bold">{t("Status")}</th>
-                    <th className="px-4 py-3 text-right font-bold">{t("Invoice")}</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {filteredOrders.map((order) => (
-                    <tr key={order.orderId} className="hover:bg-slate-50/70">
-                      <td className="px-4 py-3 font-bold text-slate-800">{order.orderId}</td>
-                      <td className="px-4 py-3">{t(order.customer)}</td>
-                      <td className="px-4 py-3 font-semibold">৳{order.total}</td>
-                      <td className="px-4 py-3"><span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-700">{t(order.status)}</span></td>
-                      <td className="px-4 py-3 text-right">
-                        <button type="button" aria-label={`${t("Print invoice")} ${order.orderId}`} onClick={() => setInvoiceOrder(order)} className="inline-flex items-center gap-1 rounded-lg px-2 py-1.5 text-xs font-bold text-slate-600 hover:bg-slate-100">
-                          <Printer size={14} /> {t("Print")}
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                  {filteredOrders.length === 0 ? (
-                    <tr><td colSpan={5} className="px-4 py-8 text-center text-sm text-slate-500">{t("No matching orders found.")}</td></tr>
-                  ) : null}
-                </tbody>
-              </table>
-            </div>
-          </section>
+          <AdminOrderManager />
 
           <section id="management" className="mt-7 scroll-mt-6">
             <div className="mb-4">
@@ -579,51 +493,12 @@ export function AdminDashboard() {
           </section>
 
           <footer className="mt-7 flex flex-wrap items-center justify-between gap-2 border-t border-slate-200 py-5 text-xs text-slate-500">
-            <span>{t("Demo dashboard · Data is illustrative and not connected to live services.")}</span>
+            <span>{t("Sales figures are illustrative; customer orders are live.")}</span>
             <span>{t("Local admin session protected")}</span>
           </footer>
         </section>
       </div>
 
-      {invoiceOrder ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-slate-950/50 p-4">
-          <section role="dialog" aria-modal="true" aria-labelledby="invoice-title" className="admin-invoice-print my-auto w-full max-w-xl rounded-2xl bg-white p-6 shadow-2xl sm:p-9">
-            <div className="mb-6 flex items-start justify-between gap-3 print:hidden">
-              <div>
-                <p className="text-xs font-bold uppercase tracking-widest text-emerald-700">{t("Print preview")}</p>
-                <h2 id="invoice-title" className="mt-1 text-xl font-black">{t("Customer invoice")}</h2>
-              </div>
-              <button type="button" aria-label={t("Close")} onClick={() => setInvoiceOrder(null)} className="rounded-lg p-2 text-slate-500 hover:bg-slate-100"><X size={19} /></button>
-            </div>
-            <div className="border-b border-slate-200 pb-5">
-              <p className="text-xl font-black">{storeInfo.name}</p>
-              <p className="mt-1 text-sm text-slate-500">{storeInfo.address}</p>
-              <p className="text-sm text-slate-500">{t("Phone number")}: {storeInfo.phone}</p>
-            </div>
-            <div className="flex flex-wrap justify-between gap-4 py-5 text-sm">
-              <div><p className="text-slate-500">{t("Invoice")}</p><p className="font-extrabold">{invoiceOrder.orderId}</p></div>
-              <div><p className="text-slate-500">{t("Customer")}</p><p className="font-extrabold">{t(invoiceOrder.customer)}</p></div>
-              <div><p className="text-slate-500">{t("Status")}</p><p className="font-extrabold">{t(invoiceOrder.status)}</p></div>
-            </div>
-            <div className="rounded-xl border border-slate-200">
-              <div className="flex justify-between gap-3 border-b border-slate-200 px-4 py-3 text-sm font-bold">
-                <span>{t("Order summary")}</span><span>{t("Amount")}</span>
-              </div>
-              <div className="flex justify-between gap-3 px-4 py-4 text-sm">
-                <span>{t("Demo order items")}</span><span>৳{invoiceOrder.total}</span>
-              </div>
-              <div className="flex justify-between gap-3 border-t border-slate-200 bg-slate-50 px-4 py-3 text-sm font-black">
-                <span>{t("Total")}</span><span>৳{invoiceOrder.total}</span>
-              </div>
-            </div>
-            <p className="mt-4 text-xs leading-5 text-slate-500">{t("Demo invoice: itemized product data is not connected yet.")}</p>
-            <div className="mt-6 flex justify-end gap-2 print:hidden">
-              <button type="button" onClick={() => setInvoiceOrder(null)} className="rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-bold text-slate-700">{t("Close")}</button>
-              <button type="button" onClick={() => window.print()} className="inline-flex items-center gap-2 rounded-xl bg-emerald-700 px-4 py-2.5 text-sm font-bold text-white"><Printer size={16} /> {t("Print invoice")}</button>
-            </div>
-          </section>
-        </div>
-      ) : null}
     </main>
   );
 }

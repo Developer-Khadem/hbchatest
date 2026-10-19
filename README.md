@@ -29,7 +29,7 @@ npm run prisma:generate
 npm run db:push
 ```
 
-The support ticket form stores submitted tickets in the database; run these commands before deploying that feature.
+The support ticket form and checkout store submitted requests and orders in the database. Run these commands after updating the Prisma schema and before deploying:
 
 ## Product translations
 

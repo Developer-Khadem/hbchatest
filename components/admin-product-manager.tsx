@@ -5,6 +5,7 @@ import { type ChangeEvent, type FormEvent, useCallback, useEffect, useRef, useSt
 import { ImagePlus, LoaderCircle, Pencil, Plus, Search, Trash2, Upload, X } from "lucide-react";
 import { useCart } from "@/components/cart-context";
 import { useLanguage } from "@/components/language-context";
+import { getProductImageSource } from "@/lib/product-images";
 
 type Product = {
   id: string;
@@ -416,7 +417,7 @@ export function AdminProductManager() {
                 <tr key={product.id}>
                   <td className="px-4 py-3">
                     <span className="flex items-center gap-3">
-                      <Image src={product.image} alt="" width={40} height={40} unoptimized className="size-10 rounded-lg object-cover" />
+                      <Image src={getProductImageSource(product.image)} alt="" width={40} height={40} unoptimized className="size-10 rounded-lg object-cover" />
                       <span><span className="block font-bold">{t(product.name)}</span><span className="block text-xs text-slate-500">{product.slug}</span></span>
                     </span>
                   </td>
@@ -492,7 +493,7 @@ export function AdminProductManager() {
               <div>
                 <p className="text-sm font-semibold">{t("Product photo")}{editingId ? "" : " *"}</p>
                 <div className="mt-2 flex flex-wrap items-center gap-4 rounded-xl border border-dashed border-slate-300 bg-slate-50 p-4">
-                  {form.image ? <Image src={form.image} alt={t("Product preview")} width={88} height={88} unoptimized className="size-[88px] rounded-xl object-cover" /> : <span className="grid size-[88px] place-items-center rounded-xl bg-white text-slate-400"><ImagePlus size={28} /></span>}
+                  {form.image ? <Image src={getProductImageSource(form.image)} alt={t("Product preview")} width={88} height={88} unoptimized className="size-[88px] rounded-xl object-cover" /> : <span className="grid size-[88px] place-items-center rounded-xl bg-white text-slate-400"><ImagePlus size={28} /></span>}
                   <div className="flex-1">
                     <p className="text-xs leading-5 text-slate-600">{t("Upload one JPG, PNG or WebP image to Cloudinary (max 10 MB).")}</p>
                     <button type="button" disabled={isUploading} onClick={() => fileInput.current?.click()} className="mt-2 inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700 hover:border-emerald-300 disabled:opacity-50">
