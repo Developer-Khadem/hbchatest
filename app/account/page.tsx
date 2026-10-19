@@ -107,8 +107,8 @@ export default function AccountPage() {
   };
 
   return (
-    <main className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
-      <section className="mx-auto max-w-lg rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
+    <main className="mx-auto flex min-h-[calc(100svh-13rem)] w-full max-w-7xl items-center justify-center px-4 py-4 sm:px-6 sm:py-8 lg:min-h-[calc(100svh-8rem)] lg:px-8 lg:py-12">
+      <section className="mx-auto w-full max-w-lg rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
         {isLoading ? (
           <p className="py-8 text-center text-slate-600" role="status">{t("Loading account...")}</p>
         ) : user ? (

@@ -263,7 +263,27 @@ export function Header() {
       categoryTab.click();
     }
     window.history.pushState(null, "", `/#${targetId}`);
-    scrollToSection(targetId);
+    const preservePortraitTopGap =
+      targetId === "home" && window.matchMedia("(orientation: portrait) and (max-width: 639px)").matches;
+    const topOffset = preservePortraitTopGap
+      ? Number.parseFloat(window.getComputedStyle(target).marginTop) || 0
+      : 0;
+    scrollToSection(targetId, topOffset);
+  };
+
+  const navigateToTrack = (event: MouseEvent<HTMLAnchorElement>) => {
+    if (
+      event.defaultPrevented ||
+      event.button !== 0 ||
+      event.metaKey ||
+      event.ctrlKey ||
+      event.shiftKey ||
+      event.altKey
+    ) {
+      return;
+    }
+
+    window.scrollTo({ top: 0, behavior: "instant" });
   };
 
   return (
@@ -609,6 +629,8 @@ export function Header() {
             </Link>
             <Link
               href="/track"
+              scroll={false}
+              onClick={navigateToTrack}
               aria-label={t("Track order")}
               title={t("Track order")}
               className="inline-flex h-12 w-12 items-center justify-center text-white transition hover:text-amber-200 focus-visible:rounded-lg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
@@ -680,6 +702,8 @@ export function Header() {
       </Link>
       <Link
         href="/track"
+        scroll={false}
+        onClick={navigateToTrack}
         aria-label={t("Track order")}
         className="inline-flex h-12 w-10 shrink-0 items-center justify-center text-white transition hover:text-amber-200 focus-visible:rounded-lg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white sm:w-12"
       >
