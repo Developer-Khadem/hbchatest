@@ -6,6 +6,7 @@ import { ImagePlus, LoaderCircle, Pencil, Plus, Search, Trash2, Upload, X } from
 import { useCart } from "@/components/cart-context";
 import { useLanguage } from "@/components/language-context";
 import { getProductImageSource } from "@/lib/product-images";
+import { categories as storeCategories } from "@/lib/site-data";
 
 type Product = {
   id: string;
@@ -26,11 +27,30 @@ type Product = {
   tags: string[];
 };
 
-type Category = { id: string; name: string };
-
 type ProductForm = Omit<Product, "id">;
+type ProductClassification = "" | "নতুন" | "জনপ্রিয়" | "বেস্ট সেলার";
 
 type ApiError = { error?: unknown };
+type ProductSection = "card" | "description";
+
+const productCategories = ["achar", "balachao", "snacks", "combo"].flatMap((id) => {
+  const category = storeCategories.find((entry) => entry.id === id);
+  return category ? [category] : [];
+});
+
+function getProductClassification(badge: string, featured: boolean): ProductClassification {
+  const normalizedBadge = badge.trim().toLocaleLowerCase();
+  if (normalizedBadge === "নতুন" || normalizedBadge === "new") return "নতুন";
+  if (normalizedBadge === "বেস্ট সেলার" || normalizedBadge === "best seller" || normalizedBadge === "best sellers") {
+    return "বেস্ট সেলার";
+  }
+  if (featured || normalizedBadge === "জনপ্রিয়" || normalizedBadge === "popular") return "জনপ্রিয়";
+  return "";
+}
+
+function isProductClassification(value: string): value is ProductClassification {
+  return value === "" || value === "নতুন" || value === "জনপ্রিয়" || value === "বেস্ট সেলার";
+}
 
 function getChangedFields<T extends object>(original: T, current: T): Partial<T> {
   const changed: Partial<T> = {};
@@ -64,10 +84,6 @@ function readError(body: ApiError, fallback: string) {
   return typeof body.error === "string" ? body.error : fallback;
 }
 
-function makeSlug(value: string) {
-  return value.normalize("NFKC").trim().toLowerCase().replace(/[^\p{L}\p{N}]+/gu, "-").replace(/^-+|-+$/g, "");
-}
-
 async function parseJson(response: Response): Promise<unknown> {
   try {
     return await response.json();
@@ -76,8 +92,9 @@ async function parseJson(response: Response): Promise<unknown> {
   }
 }
 
-const MAX_PRODUCT_IMAGE_BYTES = 100 * 1024;
-const TARGET_PRODUCT_IMAGE_BYTES = 96 * 1024;
+const MAX_PRODUCT_IMAGE_BYTES = 50 * 1024;
+const TARGET_PRODUCT_IMAGE_BYTES = 48 * 1024;
+const MIN_PRODUCT_IMAGE_DIMENSION = 64;
 
 function encodeWebp(canvas: HTMLCanvasElement, quality: number): Promise<Blob> {
   return new Promise((resolve, reject) => {
@@ -103,6 +120,7 @@ async function compressProductImage(file: File): Promise<File> {
     const initialScale = Math.min(1, 1600 / Math.max(bitmap.width, bitmap.height));
     let width = Math.max(1, Math.round(bitmap.width * initialScale));
     let height = Math.max(1, Math.round(bitmap.height * initialScale));
+    let smallestBlob: Blob | null = null;
 
     while (true) {
       canvas.width = width;
@@ -113,17 +131,22 @@ async function compressProductImage(file: File): Promise<File> {
 
       for (const quality of [0.82, 0.68, 0.54, 0.4, 0.28, 0.18, 0.1]) {
         const blob = await encodeWebp(canvas, quality);
+        if (!smallestBlob || blob.size < smallestBlob.size) {
+          smallestBlob = blob;
+        }
         if (blob.size < MAX_PRODUCT_IMAGE_BYTES && blob.size <= TARGET_PRODUCT_IMAGE_BYTES) {
           const fileName = file.name.replace(/\.[^.]+$/, "") || "product-image";
           return new File([blob], `${fileName}.webp`, { type: "image/webp" });
         }
       }
 
-      if (Math.max(width, height) <= 64) {
-        throw new Error("Could not compress this image below 100 KB. Choose a smaller or simpler image.");
+      if (Math.max(width, height) <= MIN_PRODUCT_IMAGE_DIMENSION) {
+        if (!smallestBlob) throw new Error("Your browser could not compress this image.");
+        const fileName = file.name.replace(/\.[^.]+$/, "") || "product-image";
+        return new File([smallestBlob], `${fileName}.webp`, { type: "image/webp" });
       }
 
-      const scale = Math.max(64 / Math.max(width, height), 0.8);
+      const scale = Math.max(MIN_PRODUCT_IMAGE_DIMENSION / Math.max(width, height), 0.8);
       width = Math.max(1, Math.round(width * scale));
       height = Math.max(1, Math.round(height * scale));
     }
@@ -132,7 +155,7 @@ async function compressProductImage(file: File): Promise<File> {
   }
 }
 
-async function fetchAdminProducts(): Promise<{ products: Product[]; categories: Category[] }> {
+async function fetchAdminProducts(): Promise<Product[]> {
   const response = await fetch("/api/admin/products", { cache: "no-store" });
   const result: unknown = await parseJson(response);
   if (!response.ok) throw new Error(readError(result as ApiError, "Unable to load products."));
@@ -140,10 +163,7 @@ async function fetchAdminProducts(): Promise<{ products: Product[]; categories: 
     throw new Error("The server returned invalid product data.");
   }
 
-  return {
-    products: result.products as Product[],
-    categories: "categories" in result && Array.isArray(result.categories) ? result.categories as Category[] : [],
-  };
+  return result.products as Product[];
 }
 
 export function AdminProductManager() {
@@ -152,10 +172,11 @@ export function AdminProductManager() {
   const fileInput = useRef<HTMLInputElement>(null);
   const originalForm = useRef<ProductForm | null>(null);
   const [items, setItems] = useState<Product[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
   const [search, setSearch] = useState("");
   const [form, setForm] = useState<ProductForm>(emptyForm);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [activeSection, setActiveSection] = useState<ProductSection>("card");
+  const [activeEditSection, setActiveEditSection] = useState<ProductSection>("card");
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -166,10 +187,9 @@ export function AdminProductManager() {
 
   const loadProducts = useCallback(async () => {
     try {
-      const { products, categories: loadedCategories } = await fetchAdminProducts();
+      const products = await fetchAdminProducts();
       setError("");
       setItems(products);
-      setCategories(loadedCategories);
     } catch (loadError) {
       setError(loadError instanceof Error ? loadError.message : "Unable to load products.");
     } finally {
@@ -179,10 +199,9 @@ export function AdminProductManager() {
 
   useEffect(() => {
     let cancelled = false;
-    fetchAdminProducts().then(({ products, categories: loadedCategories }) => {
+    fetchAdminProducts().then((products) => {
       if (cancelled) return;
       setItems(products);
-      setCategories(loadedCategories);
       setError("");
     }).catch((loadError: unknown) => {
       if (!cancelled) setError(loadError instanceof Error ? loadError.message : "Unable to load products.");
@@ -197,18 +216,22 @@ export function AdminProductManager() {
   const filteredItems = items.filter((product) =>
     `${product.name} ${product.category} ${product.slug}`.toLocaleLowerCase().includes(search.trim().toLocaleLowerCase()),
   );
+  const sectionItems = filteredItems;
 
   const startCreate = () => {
     setEditingId(null);
+    setActiveSection("card");
+    setActiveEditSection("card");
     originalForm.current = null;
-    setForm({ ...emptyForm, category: categories[0]?.name ?? "" });
+    setForm({ ...emptyForm, category: productCategories[0]?.name ?? "" });
     setNotice("");
     setError("");
     setIsFormOpen(true);
   };
 
-  const startEdit = (product: Product) => {
+  const startEdit = (product: Product, section: ProductSection = "card") => {
     setEditingId(product.id);
+    setActiveEditSection(section);
     const productForm: ProductForm = {
       name: product.name,
       slug: product.slug,
@@ -302,7 +325,7 @@ export function AdminProductManager() {
 
       const secureUrl = uploadResult.secure_url;
       setForm((current) => ({ ...current, image: secureUrl, gallery: [secureUrl] }));
-      setNotice(t("Image uploaded to Cloudinary."));
+      setNotice(`${t("Image uploaded to Cloudinary.")} (${(compressedFile.size / 1024).toFixed(1)} KB WebP)`);
     } catch (uploadError) {
       setError(uploadError instanceof Error ? uploadError.message : "Cloudinary image upload failed.");
     } finally {
@@ -314,21 +337,20 @@ export function AdminProductManager() {
     event.preventDefault();
     setError("");
     setNotice("");
-    if (!editingId && !form.image) {
-      setError(t("Upload the product image to Cloudinary before saving."));
-      return;
-    }
 
     setIsSaving(true);
     const payload = editingId && originalForm.current
       ? getChangedFields(originalForm.current, form)
       : {
-        ...form,
-        slug: makeSlug(form.slug || form.name),
-        price: Number(form.price),
-        salePrice: form.salePrice === null || Number.isNaN(Number(form.salePrice)) ? null : Number(form.salePrice),
-        stock: Number(form.stock),
-        tags: form.tags,
+        name: form.name,
+        category: form.category,
+        unit: form.unit,
+        price: form.price,
+        salePrice: form.salePrice,
+        stock: form.stock,
+        badge: form.badge,
+        featured: form.featured,
+        image: form.image,
       };
 
     if (editingId && Object.keys(payload).length === 0) {
@@ -396,12 +418,45 @@ export function AdminProductManager() {
         <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder={t("Search products")} className="w-full rounded-xl border border-slate-200 py-2.5 pl-9 pr-3 text-sm outline-none focus:border-emerald-500" />
       </label>
 
+      <div className="mt-5 flex flex-wrap gap-2 border-b border-slate-200" role="tablist" aria-label={t("Product sections")}>
+        <button
+          type="button"
+          role="tab"
+          id="admin-products-card-tab"
+          aria-selected={activeSection === "card"}
+          aria-controls="admin-products-card-panel"
+          onClick={() => setActiveSection("card")}
+          className={`border-b-2 px-4 py-3 text-sm font-bold transition ${activeSection === "card" ? "border-emerald-700 text-emerald-800" : "border-transparent text-slate-500 hover:text-slate-800"}`}
+        >
+          {t("Product cards")}
+        </button>
+        <button
+          type="button"
+          role="tab"
+          id="admin-products-description-tab"
+          aria-selected={activeSection === "description"}
+          aria-controls="admin-products-description-panel"
+          onClick={() => setActiveSection("description")}
+          className={`border-b-2 px-4 py-3 text-sm font-bold transition ${activeSection === "description" ? "border-emerald-700 text-emerald-800" : "border-transparent text-slate-500 hover:text-slate-800"}`}
+        >
+          {t("Product descriptions")}
+        </button>
+      </div>
+
       {isLoading ? (
         <p className="mt-6 flex items-center gap-2 text-sm text-slate-500"><LoaderCircle size={17} className="animate-spin" /> {t("Loading products...")}</p>
       ) : error && items.length === 0 ? null : filteredItems.length === 0 ? (
         <p className="mt-6 rounded-xl bg-slate-50 p-5 text-center text-sm text-slate-500">{t("No products found.")}</p>
       ) : (
-        <div className="mt-4 overflow-x-auto rounded-xl border border-slate-200">
+        <div
+          id={activeSection === "card" ? "admin-products-card-panel" : "admin-products-description-panel"}
+          role="tabpanel"
+          aria-labelledby={activeSection === "card" ? "admin-products-card-tab" : "admin-products-description-tab"}
+          className="mt-4 overflow-x-auto rounded-xl border border-slate-200"
+        >
+          {sectionItems.length === 0 ? (
+            <p className="p-5 text-center text-sm text-slate-500">{t("No product descriptions yet.")}</p>
+          ) : activeSection === "card" ? (
           <table className="min-w-[720px] w-full text-left text-sm">
             <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
               <tr>
@@ -413,7 +468,7 @@ export function AdminProductManager() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {filteredItems.map((product) => (
+              {sectionItems.map((product) => (
                 <tr key={product.id}>
                   <td className="px-4 py-3">
                     <span className="flex items-center gap-3">
@@ -434,6 +489,32 @@ export function AdminProductManager() {
               ))}
             </tbody>
           </table>
+          ) : (
+            <table className="min-w-[720px] w-full text-left text-sm">
+              <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+                <tr>
+                  <th className="px-4 py-3">{t("Product")}</th>
+                  <th className="px-4 py-3">{t("Short description")}</th>
+                  <th className="px-4 py-3">{t("Description")}</th>
+                  <th className="px-4 py-3 text-right">{t("Actions")}</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {sectionItems.map((product) => (
+                  <tr key={product.id}>
+                    <td className="px-4 py-3 font-bold">{t(product.name)}</td>
+                    <td className="max-w-64 px-4 py-3 text-slate-600">{product.shortDesc || "—"}</td>
+                    <td className="max-w-sm px-4 py-3 text-slate-600">{product.description || "—"}</td>
+                    <td className="px-4 py-3 text-right">
+                      <button type="button" onClick={() => startEdit(product, "description")} className="rounded-lg px-3 py-2 text-sm font-bold text-emerald-800 hover:bg-emerald-50">
+                        {t("Edit description")}
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
         </div>
       )}
 
@@ -443,72 +524,105 @@ export function AdminProductManager() {
             <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4 sm:px-6">
               <div>
                 <h3 id="product-form-title" className="text-lg font-black">{t(editingId ? "Edit product" : "Add product")}</h3>
-                <p className="mt-1 text-xs text-slate-500">{t(editingId ? "Only changed fields will be saved." : "Required product details and one Cloudinary image.")}</p>
+                <p className="mt-1 text-xs text-slate-500">{t(editingId ? "Only changed fields will be saved." : "Add the product card details now; you can add its description later.")}</p>
               </div>
               <button type="button" aria-label={t("Close")} onClick={() => setIsFormOpen(false)} className="rounded-lg p-2 text-slate-500 hover:bg-slate-100"><X size={19} /></button>
             </div>
 
-            <form noValidate={Boolean(editingId)} onSubmit={saveProduct} className="space-y-5 p-5 sm:p-6">
-              <div className="grid gap-4 sm:grid-cols-2">
-                <label className="text-sm font-semibold">{t("Product name")}{editingId ? "" : " *"}
-                  <input required={!editingId} minLength={editingId ? undefined : 2} maxLength={120} value={form.name} onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))} onBlur={() => setForm((current) => ({ ...current, slug: current.slug || makeSlug(current.name) }))} className={inputClass} />
-                </label>
-                <label className="text-sm font-semibold">{t("URL slug")}{editingId ? "" : " *"}
-                  <input required={!editingId} maxLength={160} value={form.slug} onChange={(event) => setForm((current) => ({ ...current, slug: makeSlug(event.target.value) }))} className={inputClass} />
-                </label>
-                <label className="text-sm font-semibold">{t("Category")}{editingId ? "" : " *"}
-                  <input required={!editingId} list="admin-product-categories" maxLength={80} value={form.category} onChange={(event) => setForm((current) => ({ ...current, category: event.target.value }))} className={inputClass} />
-                  <datalist id="admin-product-categories">{categories.map((category) => <option key={category.id} value={category.name} />)}</datalist>
-                </label>
-                <label className="text-sm font-semibold">{t("Size / jar variant")}{editingId ? "" : " *"}
-                  <input required={!editingId} maxLength={80} value={form.unit} onChange={(event) => setForm((current) => ({ ...current, unit: event.target.value }))} placeholder={t("e.g. 500 g glass jar")} className={inputClass} />
-                </label>
-                <label className="text-sm font-semibold">{t("Regular price")} (৳){editingId ? "" : " *"}
-                  <input required={!editingId} type="number" min="0" max="10000000" step="1" value={form.price} onChange={(event) => setForm((current) => ({ ...current, price: Number(event.target.value) }))} className={inputClass} />
-                </label>
-                <label className="text-sm font-semibold">{t("Offer price")} (৳)
-                  <input type="number" min="0" max={form.price} step="0.01" value={form.salePrice ?? ""} onChange={(event) => setForm((current) => ({ ...current, salePrice: event.target.value === "" ? null : Number(event.target.value) }))} className={inputClass} />
-                </label>
-                <label className="text-sm font-semibold">{t("Stock")}{editingId ? "" : " *"}
-                  <input required={!editingId} type="number" min="0" max="10000000" step="1" value={form.stock} onChange={(event) => setForm((current) => ({ ...current, stock: Number(event.target.value) }))} className={inputClass} />
-                </label>
-                <label className="text-sm font-semibold">{t("Badge")}
-                  <input maxLength={40} value={form.badge} onChange={(event) => setForm((current) => ({ ...current, badge: event.target.value }))} className={inputClass} />
-                </label>
-              </div>
-
-              <label className="block text-sm font-semibold">{t("Short description")}{editingId ? "" : " *"}
-                <input required={!editingId} minLength={editingId ? undefined : 2} maxLength={240} value={form.shortDesc} onChange={(event) => setForm((current) => ({ ...current, shortDesc: event.target.value }))} className={inputClass} />
-              </label>
-              <label className="block text-sm font-semibold">{t("Description")}{editingId ? "" : " *"}
-                <textarea required={!editingId} minLength={editingId ? undefined : 2} maxLength={3000} rows={3} value={form.description} onChange={(event) => setForm((current) => ({ ...current, description: event.target.value }))} className={inputClass} />
-              </label>
-              <label className="block text-sm font-semibold">{t("Ingredients")}
-                <textarea maxLength={1000} rows={2} value={form.ingredients} onChange={(event) => setForm((current) => ({ ...current, ingredients: event.target.value }))} className={inputClass} />
-              </label>
-              <label className="block text-sm font-semibold">{t("Tags")} <span className="font-normal text-slate-500">({t("comma separated")})</span>
-                <input value={form.tags.join(", ")} onChange={(event) => setForm((current) => ({ ...current, tags: event.target.value.split(",").map((tag) => tag.trim()).filter(Boolean) }))} className={inputClass} />
-              </label>
-
-              <div>
-                <p className="text-sm font-semibold">{t("Product photo")}{editingId ? "" : " *"}</p>
-                <div className="mt-2 flex flex-wrap items-center gap-4 rounded-xl border border-dashed border-slate-300 bg-slate-50 p-4">
-                  {form.image ? <Image src={getProductImageSource(form.image)} alt={t("Product preview")} width={88} height={88} unoptimized className="size-[88px] rounded-xl object-cover" /> : <span className="grid size-[88px] place-items-center rounded-xl bg-white text-slate-400"><ImagePlus size={28} /></span>}
-                  <div className="flex-1">
-                    <p className="text-xs leading-5 text-slate-600">{t("Upload one JPG, PNG or WebP image to Cloudinary (max 10 MB).")}</p>
-                    <button type="button" disabled={isUploading} onClick={() => fileInput.current?.click()} className="mt-2 inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700 hover:border-emerald-300 disabled:opacity-50">
-                      {isUploading ? <LoaderCircle size={15} className="animate-spin" /> : <Upload size={15} />}
-                      {t(isUploading ? "Uploading..." : form.image ? "Replace image" : "Choose image")}
+            <form noValidate onSubmit={saveProduct} className="space-y-5 p-5 sm:p-6">
+              {editingId ? (
+                <div className="flex gap-2 border-b border-slate-200" role="tablist" aria-label={t("Product sections")}>
+                  {(["card", "description"] as const).map((section) => (
+                    <button
+                      key={section}
+                      type="button"
+                      role="tab"
+                      aria-selected={activeEditSection === section}
+                      onClick={() => setActiveEditSection(section)}
+                      className={`border-b-2 px-3 py-2 text-sm font-bold ${activeEditSection === section ? "border-emerald-700 text-emerald-800" : "border-transparent text-slate-500"}`}
+                    >
+                      {t(section === "card" ? "Product card details" : "Product description details")}
                     </button>
-                    <input ref={fileInput} type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={(event) => void uploadImage(event)} />
-                  </div>
+                  ))}
                 </div>
-              </div>
+              ) : null}
 
-              <label className="flex items-center gap-2 text-sm font-semibold">
-                <input type="checkbox" checked={form.featured} onChange={(event) => setForm((current) => ({ ...current, featured: event.target.checked }))} className="size-4 accent-emerald-700" />
-                {t("Feature this product")}
-              </label>
+              {activeEditSection === "card" ? (
+                <>
+                  <h4 className="text-sm font-bold text-slate-700">{t("Product card details")}</h4>
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <label className="text-sm font-semibold">{t("Category")}
+                      <select value={form.category} onChange={(event) => setForm((current) => ({ ...current, category: event.target.value }))} className={inputClass}>
+                        {productCategories.map((category) => <option key={category.id} value={category.name}>{t(category.name)}</option>)}
+                      </select>
+                    </label>
+                    <label className="text-sm font-semibold">{t("Product classification")}
+                      <select
+                        value={getProductClassification(form.badge, form.featured)}
+                        onChange={(event) => {
+                          const value = event.target.value;
+                          if (!isProductClassification(value)) return;
+                          const badge = value;
+                          setForm((current) => ({ ...current, badge, featured: badge === "জনপ্রিয়" }));
+                        }}
+                        className={inputClass}
+                      >
+                        <option value="">{t("Select classification")}</option>
+                        <option value="নতুন">{t("New")}</option>
+                        <option value="জনপ্রিয়">{t("Popular")}</option>
+                        <option value="বেস্ট সেলার">{t("Best Seller")}</option>
+                      </select>
+                    </label>
+                    <label className="text-sm font-semibold">{t("Product name")}
+                      <input maxLength={120} value={form.name} onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))} className={inputClass} />
+                    </label>
+                    <label className="text-sm font-semibold">{t("Size / jar variant")}
+                      <input maxLength={80} value={form.unit} onChange={(event) => setForm((current) => ({ ...current, unit: event.target.value }))} placeholder={t("e.g. 500 g glass jar")} className={inputClass} />
+                    </label>
+                    <label className="text-sm font-semibold">{t("Regular price")} (৳)
+                      <input type="number" min="0" max="10000000" step="1" value={form.price} onChange={(event) => setForm((current) => ({ ...current, price: Number(event.target.value) }))} className={inputClass} />
+                    </label>
+                    <label className="text-sm font-semibold">{t("Offer price")} (৳)
+                      <input type="number" min="0" max={form.price} step="1" value={form.salePrice ?? ""} onChange={(event) => setForm((current) => ({ ...current, salePrice: event.target.value === "" ? null : Number(event.target.value) }))} className={inputClass} />
+                    </label>
+                    <label className="text-sm font-semibold">{t("Stock")}
+                      <input type="number" min="0" max="10000000" step="1" value={form.stock} onChange={(event) => setForm((current) => ({ ...current, stock: Number(event.target.value) }))} className={inputClass} />
+                    </label>
+                  </div>
+
+                  <div>
+                    <p className="text-sm font-semibold">{t("Product photo")}</p>
+                    <div className="mt-2 flex flex-wrap items-center gap-4 rounded-xl border border-dashed border-slate-300 bg-slate-50 p-4">
+                      {form.image ? <Image src={getProductImageSource(form.image)} alt={t("Product preview")} width={88} height={88} unoptimized className="size-[88px] rounded-xl object-cover" /> : <span className="grid size-[88px] place-items-center rounded-xl bg-white text-slate-400"><ImagePlus size={28} /></span>}
+                      <div className="flex-1">
+                        <p className="text-xs leading-5 text-slate-600">{t("Upload a JPG, PNG or WebP image. It will be compressed to under 50 KB when possible.")}</p>
+                        <button type="button" disabled={isUploading} onClick={() => fileInput.current?.click()} className="mt-2 inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700 hover:border-emerald-300 disabled:opacity-50">
+                          {isUploading ? <LoaderCircle size={15} className="animate-spin" /> : <Upload size={15} />}
+                          {t(isUploading ? "Uploading..." : form.image ? "Replace image" : "Choose image")}
+                        </button>
+                        <input ref={fileInput} type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={(event) => void uploadImage(event)} />
+                      </div>
+                    </div>
+                  </div>
+
+                </>
+              ) : (
+                <>
+                  <h4 className="text-sm font-bold text-slate-700">{t("Product description details")}</h4>
+                  <label className="block text-sm font-semibold">{t("Short description")}
+                    <input maxLength={240} value={form.shortDesc} onChange={(event) => setForm((current) => ({ ...current, shortDesc: event.target.value }))} className={inputClass} />
+                  </label>
+                  <label className="block text-sm font-semibold">{t("Description")}
+                    <textarea maxLength={3000} rows={4} value={form.description} onChange={(event) => setForm((current) => ({ ...current, description: event.target.value }))} className={inputClass} />
+                  </label>
+                  <label className="block text-sm font-semibold">{t("Ingredients")}
+                    <textarea maxLength={1000} rows={2} value={form.ingredients} onChange={(event) => setForm((current) => ({ ...current, ingredients: event.target.value }))} className={inputClass} />
+                  </label>
+                  <label className="block text-sm font-semibold">{t("Tags")} <span className="font-normal text-slate-500">({t("comma separated")})</span>
+                    <input value={form.tags.join(", ")} onChange={(event) => setForm((current) => ({ ...current, tags: event.target.value.split(",").map((tag) => tag.trim()).filter(Boolean) }))} className={inputClass} />
+                  </label>
+                </>
+              )}
 
               {error ? <p role="alert" className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm font-semibold text-rose-700">{t(error)}</p> : null}
               {notice ? <p role="status" className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm font-semibold text-emerald-800">{notice}</p> : null}

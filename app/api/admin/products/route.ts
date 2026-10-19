@@ -1,6 +1,6 @@
 import { Prisma } from "@prisma/client";
 import { authorizeAdminApi } from "@/lib/admin-api";
-import { serializeAdminProduct, validateAdminProduct } from "@/lib/admin-products";
+import { makeAdminProductSlug, serializeAdminProduct, validateAdminProduct } from "@/lib/admin-products";
 import { prisma } from "@/lib/prisma";
 import { invalidateStoreProducts } from "@/lib/store-catalog";
 import { ProductTranslationError, translateProductFields } from "@/lib/product-translations";
@@ -46,11 +46,16 @@ export async function POST(request: Request) {
   if (!validation.success) return Response.json({ error: validation.error }, { status: 400 });
 
   try {
-    const data = validation.data;
+    const id = crypto.randomUUID();
+    const validatedData = validation.data;
+    const data = {
+      ...validatedData,
+      slug: validatedData.slug || `${makeAdminProductSlug(validatedData.name) || "product"}-${id.slice(0, 8)}`,
+    };
     const { translations } = await translateProductFields(data);
     const product = await prisma.acharProduct.create({
       data: {
-        id: crypto.randomUUID(),
+        id,
         name: data.name,
         englishName: translations.en.name,
         translations,

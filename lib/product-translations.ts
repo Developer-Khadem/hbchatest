@@ -88,16 +88,18 @@ async function translateBatch(
 export async function translateProductFields(
   product: AdminProductInput,
 ): Promise<{ sourceLanguage: "en" | "bn"; translations: ProductTranslations }> {
+  const sourceLanguage = /[\u0980-\u09ff]/u.test(product.name) ? "bn" : "en";
+  const sourceFields = makeTranslationFields(product);
   const apiKey = process.env.GOOGLE_TRANSLATE_API_KEY;
   if (!apiKey) {
-    throw new ProductTranslationError(
-      "Automatic translation is not configured. Set GOOGLE_TRANSLATE_API_KEY and try again.",
-    );
+    console.warn("GOOGLE_TRANSLATE_API_KEY is not configured; saving product text without automatic translation.");
+    return {
+      sourceLanguage,
+      translations: { en: sourceFields, bn: sourceFields },
+    };
   }
 
-  const sourceLanguage = /[\u0980-\u09ff]/u.test(product.name) ? "bn" : "en";
   const targetLanguage = sourceLanguage === "bn" ? "en" : "bn";
-  const sourceFields = makeTranslationFields(product);
   const entries = Object.entries(sourceFields);
   const texts = entries.flatMap(([, value]) => Array.isArray(value) ? value : [value])
     .filter((value) => value.length > 0);

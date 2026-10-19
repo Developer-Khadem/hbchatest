@@ -16,26 +16,37 @@ import { useCart } from "@/components/cart-context";
 import { useLanguage } from "@/components/language-context";
 import { ProductCard } from "@/components/product-card";
 import { scrollToSection } from "@/lib/scroll-to-section";
-import { categories, products as demoProducts, testimonials } from "@/lib/site-data";
+import { categories, testimonials } from "@/lib/site-data";
+import type { Product } from "@/lib/site-data";
 
-const balachaoCategoryName = categories.find((category) => category.id === "balachao")?.name;
+const acharCategoryName = categories.find((category) => category.id === "achar")?.name;
+const balachaoCategory = categories.find((category) => category.id === "balachao");
+const balachaoCategoryName = balachaoCategory?.name;
+const otherProductsCategory = categories.find((category) => category.id === "snacks");
+const otherProductsCategoryName = otherProductsCategory?.name;
 const comboCategoryName = categories.find((category) => category.id === "combo")?.name;
 
+function getProductClassification(product: Product) {
+  const badge = product.badge.trim().toLocaleLowerCase();
+  if (badge === "নতুন" || badge === "new") return "new";
+  if (badge === "বেস্ট সেলার" || badge === "best seller" || badge === "best sellers") return "bestseller";
+  if (product.featured || badge === "জনপ্রিয়" || badge === "popular") return "popular";
+  return null;
+}
+
 function matchesProductFilter(
-  product: (typeof demoProducts)[number],
+  product: Product,
   filter: ProductFilter,
 ) {
   return (
     filter === "all" ||
-    (filter === "popular" && product.featured) ||
-    (filter === "new" && product.badge === "নতুন") ||
-    (filter === "bestseller" && product.badge === "বেস্ট সেলার")
+    getProductClassification(product) === filter
   );
 }
 
 const productFilters = [
   { id: "all", label: "All pickles", jarLabel: "All" },
-  { id: "popular", label: "Popular pickles", jarLabel: "Popular" },
+  { id: "popular", label: "Popular", jarLabel: "Popular" },
   { id: "new", label: "New arrivals", jarLabel: "New Arrivals" },
   { id: "bestseller", label: "Best sellers", jarLabel: "Best Sellers" },
 ] as const;
@@ -118,6 +129,7 @@ export default function HomePage() {
   const slideTransitionTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [activeProductFilter, setActiveProductFilter] = useState<ProductFilter>("all");
   const [activeBalachaoFilter, setActiveBalachaoFilter] = useState<ProductFilter>("all");
+  const [activeOtherProductsFilter, setActiveOtherProductsFilter] = useState<ProductFilter>("all");
   const { t } = useLanguage();
   const { products: catalogProducts, isProductsLoading, productsError } = useCart();
 
@@ -171,6 +183,7 @@ export default function HomePage() {
     if (
       sectionId !== "homepage-products-section" &&
       sectionId !== "homepage-balachao-section" &&
+      sectionId !== "homepage-other-products-section" &&
       sectionId !== "homepage-combo-section"
     ) return;
 
@@ -188,24 +201,28 @@ export default function HomePage() {
     setPendingSlide(null);
   };
   const currentSlide = heroSlides[activeSlide];
-  const visibleProducts = catalogProducts.filter((product) =>
+  const catalogAcharProducts = catalogProducts.filter((product) =>
+    product.category === acharCategoryName,
+  );
+  const visibleProducts = catalogAcharProducts.filter((product) =>
     matchesProductFilter(product, activeProductFilter),
   );
   const catalogBalachaoProducts = catalogProducts.filter(
     (product) => product.category === balachaoCategoryName,
   );
-  const demoBalachaoProducts = demoProducts.filter(
-    (product) => product.category === balachaoCategoryName,
+  const balachaoProducts = catalogBalachaoProducts.filter((product) =>
+    matchesProductFilter(product, activeBalachaoFilter),
   );
-  const balachaoProducts = (
-    catalogBalachaoProducts.length > 0 ? catalogBalachaoProducts : demoBalachaoProducts
-  ).filter((product) => matchesProductFilter(product, activeBalachaoFilter));
+  const catalogOtherProducts = catalogProducts.filter(
+    (product) => product.category === otherProductsCategoryName,
+  );
+  const otherProducts = catalogOtherProducts.filter((product) =>
+    matchesProductFilter(product, activeOtherProductsFilter),
+  );
   const catalogComboProducts = catalogProducts.filter(
     (product) => product.category === comboCategoryName,
   );
-  const comboProducts = catalogComboProducts.length > 0
-    ? catalogComboProducts
-    : demoProducts.filter((product) => product.category === comboCategoryName);
+  const comboProducts = catalogComboProducts;
 
   return (
     <main className="min-h-screen bg-transparent text-slate-900">
@@ -399,7 +416,7 @@ export default function HomePage() {
                 className="group flex w-full scroll-mt-24 cursor-pointer flex-col items-center pt-3 text-center focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-red-600 sm:w-48"
               >
                 <CategoryJar
-                  image="/img/balachao.jpg"
+                  image={balachaoCategory?.image ?? "/img/balachao.jpg"}
                   label={t(filter.jarLabel)}
                   brandLabel="HBC"
                   selected={activeBalachaoFilter === filter.id}
@@ -420,6 +437,54 @@ export default function HomePage() {
             ) : balachaoProducts.length > 0 ? (
               <div className="landscape-product-grid grid grid-cols-2 gap-x-3 gap-y-1.5 sm:gap-6 sm:grid-cols-2 xl:grid-cols-4">
                 {balachaoProducts.map((product) => (
+                  <ProductCard key={product.id} product={product} variant="standard" />
+                ))}
+              </div>
+            ) : (
+              <p className="rounded-2xl bg-slate-50 px-5 py-8 text-center text-slate-600">{t("No products found in this collection.")}</p>
+            )}
+          </div>
+        </div>
+      </section>
+
+      <section id="homepage-other-products-section" className="mx-auto max-w-7xl scroll-mt-24 px-4 py-12 sm:px-6 lg:px-8">
+        <div className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm sm:p-8">
+          <h2 className="mb-7 whitespace-nowrap text-[clamp(1.125rem,5vw,1.875rem)] font-black text-slate-900 sm:text-4xl">{t("Explore our other products")}</h2>
+
+          <div className="landscape-category-filter mb-8 grid grid-cols-2 justify-items-center gap-x-3 gap-y-4 sm:flex sm:flex-wrap sm:justify-center sm:gap-7" role="tablist" aria-label={t("Other product collections")}>
+            {productFilters.map((filter) => (
+              <button
+                key={filter.id}
+                type="button"
+                role="tab"
+                id={`homepage-other-products-tab-${filter.id}`}
+                aria-controls="homepage-other-products-panel"
+                aria-selected={activeOtherProductsFilter === filter.id}
+                onClick={() => setActiveOtherProductsFilter(filter.id)}
+                className="group flex w-full scroll-mt-24 cursor-pointer flex-col items-center pt-3 text-center focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-red-600 sm:w-48"
+              >
+                <CategoryJar
+                  image="/img/achar.jpg"
+                  label={t(filter.jarLabel)}
+                  brandLabel="HBC"
+                  selected={activeOtherProductsFilter === filter.id}
+                />
+              </button>
+            ))}
+          </div>
+
+          <div id="homepage-other-products-panel" role="tabpanel" aria-labelledby={`homepage-other-products-tab-${activeOtherProductsFilter}`} className="outline-none">
+            <div className="mb-5 flex flex-wrap items-end justify-between gap-3 border-b border-slate-200 pb-4">
+              <h3 className="text-2xl font-black text-slate-900">{t(productFilters.find((filter) => filter.id === activeOtherProductsFilter)?.jarLabel ?? "All")}</h3>
+            </div>
+
+            {isProductsLoading ? (
+              <p className="rounded-2xl bg-slate-50 px-5 py-8 text-center text-slate-600">{t("Loading products...")}</p>
+            ) : productsError ? (
+              <p role="alert" className="rounded-2xl bg-red-50 px-5 py-8 text-center text-red-700">{t(productsError)}</p>
+            ) : otherProducts.length > 0 ? (
+              <div className="landscape-product-grid grid grid-cols-2 gap-x-3 gap-y-1.5 sm:gap-6 sm:grid-cols-2 xl:grid-cols-4">
+                {otherProducts.map((product) => (
                   <ProductCard key={product.id} product={product} variant="standard" />
                 ))}
               </div>

@@ -148,14 +148,14 @@ function readList(value: unknown, maxItems: number, maxLength: number) {
 }
 
 export function validateAdminProduct(value: unknown): ProductValidationResult {
-  if (typeof value !== "object" || value === null) {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) {
     return { success: false, error: "Invalid product data." };
   }
 
   const record = value as Record<string, unknown>;
   const name = typeof record.name === "string" ? record.name.trim() : "";
   const category = typeof record.category === "string" ? record.category.trim() : "";
-  const slugInput = typeof record.slug === "string" ? record.slug : name;
+  const slugInput = typeof record.slug === "string" ? record.slug : "";
   const slug = makeAdminProductSlug(slugInput);
   const shortDesc = typeof record.shortDesc === "string" ? record.shortDesc.trim() : "";
   const description = typeof record.description === "string" ? record.description.trim() : "";
@@ -163,45 +163,52 @@ export function validateAdminProduct(value: unknown): ProductValidationResult {
   const unit = typeof record.unit === "string" ? record.unit.trim() : "";
   const badge = typeof record.badge === "string" ? record.badge.trim() : "";
   const image = typeof record.image === "string" ? record.image.trim() : "";
-  const price = typeof record.price === "number" ? record.price : Number.NaN;
-  const stock = typeof record.stock === "number" ? record.stock : Number.NaN;
-  const salePrice = record.salePrice === null || record.salePrice === "" ? null : Number(record.salePrice);
-  const gallery = readList(record.gallery, 10, 500);
-  const tags = readList(record.tags, 20, 40);
+  const price = record.price === undefined || record.price === null || record.price === ""
+    ? 0
+    : typeof record.price === "number" ? record.price : Number.NaN;
+  const stock = record.stock === undefined || record.stock === null || record.stock === ""
+    ? 0
+    : typeof record.stock === "number" ? record.stock : Number.NaN;
+  const salePrice = record.salePrice === undefined || record.salePrice === null || record.salePrice === ""
+    ? null
+    : Number(record.salePrice);
+  const gallery = record.gallery === undefined ? [] : readList(record.gallery, 10, 500);
+  const tags = record.tags === undefined ? [] : readList(record.tags, 20, 40);
+  const featured = record.featured === undefined ? false : record.featured;
 
-  if (name.length < 2 || name.length > 120) return { success: false, error: "Product name must be between 2 and 120 characters." };
-  if (!slug || slug.length > 160) return { success: false, error: "Enter a valid product slug." };
-  if (category.length < 2 || category.length > 80) return { success: false, error: "Category must be between 2 and 80 characters." };
-  if (shortDesc.length < 2 || shortDesc.length > 240) return { success: false, error: "Short description must be between 2 and 240 characters." };
-  if (description.length < 2 || description.length > 3000) return { success: false, error: "Description must be between 2 and 3000 characters." };
+  if (name.length > 120) return { success: false, error: "Product name must be 120 characters or fewer." };
+  if (slug.length > 160) return { success: false, error: "Enter a valid product slug." };
+  if (category.length > 80) return { success: false, error: "Category must be 80 characters or fewer." };
+  if (shortDesc.length > 240) return { success: false, error: "Short description must be 240 characters or fewer." };
+  if (description.length > 3000) return { success: false, error: "Description must be 3000 characters or fewer." };
   if (ingredients.length > 1000) return { success: false, error: "Ingredients must be 1000 characters or fewer." };
   if (!Number.isInteger(price) || price < 0 || price > 10000000) return { success: false, error: "Enter a valid regular price." };
   if (salePrice !== null && (!Number.isInteger(salePrice) || salePrice < 0 || salePrice > price)) {
     return { success: false, error: "Offer price must be between zero and the regular price." };
   }
   if (!Number.isInteger(stock) || stock < 0 || stock > 10000000) return { success: false, error: "Stock must be a non-negative whole number." };
-  if (!unit || unit.length > 80) return { success: false, error: "Enter a size or unit of up to 80 characters." };
+  if (unit.length > 80) return { success: false, error: "Size or unit must be 80 characters or fewer." };
   if (badge.length > 40) return { success: false, error: "Badge must be 40 characters or fewer." };
-  if (!validImageUrl(image) || image.length > 500) return { success: false, error: "Enter a valid product image URL." };
+  if ((image && !validImageUrl(image)) || image.length > 500) return { success: false, error: "Enter a valid product image URL." };
   if (!gallery || gallery.some((url) => !validImageUrl(url))) return { success: false, error: "Gallery must contain up to 10 valid image URLs." };
-  if (!tags || typeof record.featured !== "boolean") return { success: false, error: "Check tags and featured product setting." };
+  if (!tags || typeof featured !== "boolean") return { success: false, error: "Check tags and featured product setting." };
 
   return {
     success: true,
     data: {
-      name,
+      name: name || "নতুন পণ্য",
       slug,
-      category,
+      category: category || "আচার",
       shortDesc,
       description,
       ingredients,
       price,
       salePrice,
       stock,
-      unit,
+      unit: unit || "১টি জার",
       badge,
-      featured: record.featured,
-      image,
+      featured,
+      image: image || "/img/achar.jpg",
       gallery,
       tags,
     },

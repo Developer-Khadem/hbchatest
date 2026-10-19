@@ -289,7 +289,7 @@ export function Header() {
   return (
     <>
     <header id="site-header" className="sticky top-0 z-50 border-b border-[#173c2b] bg-[#234b36] text-white shadow-md backdrop-blur">
-      <div className={`header-main-row mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-x-4 gap-y-2 px-4 py-4 sm:px-6 lg:flex-wrap lg:gap-6 lg:px-8 xl:max-w-none xl:px-6 ${isSearchExpanded ? "landscape-search-expanded" : ""}`}>
+      <div className={`header-main-row mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-x-4 gap-y-2 px-4 py-4 sm:px-6 lg:flex-wrap lg:gap-4 lg:px-8 xl:max-w-none xl:px-6 ${isSearchExpanded ? "landscape-search-expanded" : ""}`}>
         <div className="header-brand-row relative order-1 flex w-full items-center justify-between lg:contents">
           <Link
             href="/"
@@ -511,6 +511,16 @@ export function Header() {
                 {t("Balachao")}
               </Link>
               <Link
+                href="/#homepage-other-products-section"
+                onClick={(event) => {
+                  navigateToHomeSection(event, "homepage-other-products-section");
+                  setIsMobileMenuOpen(false);
+                }}
+                className="rounded-lg px-4 py-3 font-bold text-white transition hover:bg-white/10 hover:text-amber-200 lg:px-[26px]"
+              >
+                {t("Other products")}
+              </Link>
+              <Link
                 href="/#homepage-combo-section"
                 onClick={(event) => {
                   navigateToHomeSection(event, "homepage-combo-section");
@@ -582,74 +592,77 @@ export function Header() {
           </span>
         </Link>
 
-        <nav className="hidden items-center justify-center gap-[8px] whitespace-nowrap text-sm font-medium text-white lg:order-4 lg:flex">
-          <Link href="/#home" onClick={(event) => navigateToHomeSection(event, "home")} className="nav-underline-link px-[10px] text-lg font-bold text-white hover:!text-amber-200">{t("Home")}</Link>
-          <Link href="/#homepage-products-section" onClick={(event) => navigateToHomeSection(event, "homepage-products-section")} className="nav-underline-link px-[10px] text-lg font-bold text-white hover:!text-amber-200">{t("Pickle")}</Link>
-          <Link href="/#homepage-balachao-section" onClick={(event) => navigateToHomeSection(event, "homepage-balachao-section")} className="nav-underline-link px-[10px] text-lg font-bold text-white hover:!text-amber-200">{t("Balachao")}</Link>
-          <Link href="/#homepage-combo-section" onClick={(event) => navigateToHomeSection(event, "homepage-combo-section")} className="nav-underline-link px-[10px] text-lg font-bold text-white hover:!text-amber-200">{t("Combo Packs")}</Link>
-        </nav>
+        <div className="header-desktop-navigation hidden items-center gap-4 lg:order-4 lg:flex xl:flex-1">
+          <nav className="flex items-center justify-start gap-[8px] whitespace-nowrap text-sm font-medium text-white xl:flex-1">
+            <Link href="/#home" onClick={(event) => navigateToHomeSection(event, "home")} className="nav-underline-link px-1.5 text-base font-bold text-white hover:!text-amber-200">{t("Home")}</Link>
+            <Link href="/#homepage-products-section" onClick={(event) => navigateToHomeSection(event, "homepage-products-section")} className="nav-underline-link px-1.5 text-base font-bold text-white hover:!text-amber-200">{t("Pickle")}</Link>
+            <Link href="/#homepage-balachao-section" onClick={(event) => navigateToHomeSection(event, "homepage-balachao-section")} className="nav-underline-link px-1.5 text-base font-bold text-white hover:!text-amber-200">{t("Balachao")}</Link>
+            <Link href="/#homepage-other-products-section" onClick={(event) => navigateToHomeSection(event, "homepage-other-products-section")} className="nav-underline-link px-1.5 text-base font-bold text-white hover:!text-amber-200">{t("Other products")}</Link>
+            <Link href="/#homepage-combo-section" onClick={(event) => navigateToHomeSection(event, "homepage-combo-section")} className="nav-underline-link px-1.5 text-base font-bold text-white hover:!text-amber-200">{t("Combo Packs")}</Link>
+          </nav>
 
-        <div className="flex items-center gap-2 sm:gap-3 lg:order-5 lg:ml-auto">
-          <div className="language-switcher hidden h-[30px] items-center rounded-full border border-white/40 p-1 text-xs font-bold lg:inline-flex" aria-label="Select language">
-            <button
-              type="button"
-              onClick={() => setLanguage("en")}
-              aria-pressed={language === "en"}
-              className={`rounded-full px-2.5 py-1.5 transition ${language === "en" ? "bg-white text-green-800" : "text-white/80 hover:bg-white/10 hover:text-white"}`}
-            >
-              EN
-            </button>
-            <button
-              type="button"
-              onClick={() => setLanguage("bn")}
-              aria-pressed={language === "bn"}
-              className={`rounded-full px-2.5 py-1.5 transition ${language === "bn" ? "bg-white text-green-800" : "text-white/80 hover:bg-white/10 hover:text-white"}`}
-            >
-              BN
-            </button>
-          </div>
-          <div className="hidden items-center gap-0 lg:flex">
-            <button
-              type="button"
-              onClick={toggleTheme}
-              aria-pressed={theme === "dark"}
-              aria-label={t(theme === "dark" ? "Switch to light mode" : "Switch to dark mode")}
-              title={t(theme === "dark" ? "Switch to light mode" : "Switch to dark mode")}
-              className="inline-flex h-12 w-12 items-center justify-center text-white transition hover:text-amber-200 focus-visible:rounded-lg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
-            >
-              {theme === "dark" ? <Sun aria-hidden="true" size={26} /> : <Moon aria-hidden="true" size={26} />}
-            </button>
-            <Link
-              href="/account"
-              aria-label={t("Account")}
-              title={t("Account")}
-              className="inline-flex h-12 w-12 items-center justify-center text-white transition hover:text-amber-200 focus-visible:rounded-lg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
-            >
-              <UserRound aria-hidden="true" size={26} />
-            </Link>
-            <Link
-              href="/track"
-              scroll={false}
-              onClick={navigateToTrack}
-              aria-label={t("Track order")}
-              title={t("Track order")}
-              className="inline-flex h-12 w-12 items-center justify-center text-white transition hover:text-amber-200 focus-visible:rounded-lg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
-            >
-              <Truck aria-hidden="true" size={26} />
-            </Link>
-            <Link
-              href="/cart"
-              aria-label={`${t("Cart")}${totalItems > 0 ? `, ${totalItems} ${t("items")}` : ""}`}
-              title={t("Cart")}
-              className="relative inline-flex h-12 w-12 items-center justify-center text-white transition hover:text-amber-200 focus-visible:rounded-lg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
-            >
-              <ShoppingCart aria-hidden="true" size={26} />
-              {totalItems > 0 ? (
-                <span className="absolute -right-1 -top-1 flex min-h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-0.5 text-[10px] font-bold leading-none text-white">
-                  {totalItems}
-                </span>
-              ) : null}
-            </Link>
+          <div className="flex items-center gap-2 sm:gap-3">
+            <div className="language-switcher hidden h-[30px] items-center rounded-full border border-white/40 p-1 text-xs font-bold lg:inline-flex" aria-label="Select language">
+              <button
+                type="button"
+                onClick={() => setLanguage("en")}
+                aria-pressed={language === "en"}
+                className={`rounded-full px-2.5 py-1.5 transition ${language === "en" ? "bg-white text-green-800" : "text-white/80 hover:bg-white/10 hover:text-white"}`}
+              >
+                EN
+              </button>
+              <button
+                type="button"
+                onClick={() => setLanguage("bn")}
+                aria-pressed={language === "bn"}
+                className={`rounded-full px-2.5 py-1.5 transition ${language === "bn" ? "bg-white text-green-800" : "text-white/80 hover:bg-white/10 hover:text-white"}`}
+              >
+                BN
+              </button>
+            </div>
+            <div className="hidden items-center gap-0 lg:flex">
+              <button
+                type="button"
+                onClick={toggleTheme}
+                aria-pressed={theme === "dark"}
+                aria-label={t(theme === "dark" ? "Switch to light mode" : "Switch to dark mode")}
+                title={t(theme === "dark" ? "Switch to light mode" : "Switch to dark mode")}
+                className="inline-flex h-12 w-12 items-center justify-center text-white transition hover:text-amber-200 focus-visible:rounded-lg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+              >
+                {theme === "dark" ? <Sun aria-hidden="true" size={26} /> : <Moon aria-hidden="true" size={26} />}
+              </button>
+              <Link
+                href="/account"
+                aria-label={t("Account")}
+                title={t("Account")}
+                className="inline-flex h-12 w-12 items-center justify-center text-white transition hover:text-amber-200 focus-visible:rounded-lg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+              >
+                <UserRound aria-hidden="true" size={26} />
+              </Link>
+              <Link
+                href="/track"
+                scroll={false}
+                onClick={navigateToTrack}
+                aria-label={t("Track order")}
+                title={t("Track order")}
+                className="inline-flex h-12 w-12 items-center justify-center text-white transition hover:text-amber-200 focus-visible:rounded-lg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+              >
+                <Truck aria-hidden="true" size={26} />
+              </Link>
+              <Link
+                href="/cart"
+                aria-label={`${t("Cart")}${totalItems > 0 ? `, ${totalItems} ${t("items")}` : ""}`}
+                title={t("Cart")}
+                className="relative inline-flex h-12 w-12 items-center justify-center text-white transition hover:text-amber-200 focus-visible:rounded-lg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+              >
+                <ShoppingCart aria-hidden="true" size={26} />
+                {totalItems > 0 ? (
+                  <span className="absolute -right-1 -top-1 flex min-h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-0.5 text-[10px] font-bold leading-none text-white">
+                    {totalItems}
+                  </span>
+                ) : null}
+              </Link>
+            </div>
           </div>
         </div>
       </div>
