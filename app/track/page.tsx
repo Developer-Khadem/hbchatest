@@ -12,7 +12,6 @@ export default function TrackOrderPage() {
   return (
     <main className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
       <div className="mb-8">
-        <p className="text-sm font-semibold uppercase tracking-[0.18em] text-red-600">{t("Tracking")}</p>
         <h1 className="mt-2 text-4xl font-black text-slate-900">{t("Track Your Order")}</h1>
       </div>
 

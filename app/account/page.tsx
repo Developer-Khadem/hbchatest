@@ -132,8 +132,7 @@ export default function AccountPage() {
         ) : (
           <>
             <div className="mb-7 text-center">
-              <p className="text-sm font-semibold uppercase tracking-[0.18em] text-red-600">{t("Account")}</p>
-              <h1 className="mt-2 text-3xl font-black text-slate-900">
+              <h1 className="mt-2 text-2xl font-black text-slate-900 sm:text-3xl">
                 {t(mode === "signin" ? "Sign in to your account" : "Create your account")}
               </h1>
             </div>
@@ -233,19 +232,6 @@ export default function AccountPage() {
               </button>
             </form>
 
-            <p className="mt-6 text-center text-sm text-slate-600">
-              {mode === "signin" ? t("Don't have an account?") : t("Already have an account?")}{" "}
-              <button
-                type="button"
-                onClick={() => {
-                  setMode(mode === "signin" ? "signup" : "signin");
-                  setError("");
-                }}
-                className="font-bold text-red-600 hover:text-red-700"
-              >
-                {t(mode === "signin" ? "Sign up" : "Back to sign in")}
-              </button>
-            </p>
           </>
         )}
       </section>

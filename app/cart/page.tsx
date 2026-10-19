@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useCart } from "@/components/cart-context";
 import { useLanguage } from "@/components/language-context";
+import { getProductImageSource } from "@/lib/product-images";
 import { localizeProduct } from "@/lib/localization";
 
 export default function CartPage() {
@@ -28,8 +29,7 @@ export default function CartPage() {
     <main className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
       <div className="mb-8 flex items-end justify-between gap-4">
         <div>
-          <p className="text-sm font-semibold uppercase tracking-[0.2em] text-red-600">{t("Cart")}</p>
-          <h1 className="mt-2 text-4xl font-black text-slate-900">{t("Your Basket")}</h1>
+          <h1 className="whitespace-nowrap text-xl font-black leading-tight text-slate-900 sm:text-4xl">{t("Your Basket")}</h1>
         </div>
         <div className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm text-slate-600">
           {totalItems} {t("items selected")}
@@ -55,7 +55,7 @@ export default function CartPage() {
               <div key={product.id} className="flex flex-col gap-4 rounded-[2rem] border border-slate-200 bg-white p-4 shadow-sm sm:flex-row sm:items-center">
                 <div className="relative h-28 w-full shrink-0 sm:w-32">
                   <Image
-                    src={product.image}
+                    src={getProductImageSource(product.image)}
                     alt={product.name}
                     fill
                     sizes="(max-width: 640px) 100vw, 128px"
