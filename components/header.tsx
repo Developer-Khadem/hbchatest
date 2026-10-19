@@ -15,6 +15,7 @@ import { storeInfo, type Product } from "@/lib/site-data";
 type SuggestionStatus = "idle" | "loading" | "ready" | "error";
 type ProductSuggestion = Product;
 const tabletLandscapeMediaQuery = "(orientation: landscape) and (min-width: 1024px) and (max-width: 1279px) and (max-height: 900px)";
+const mobileLandscapeMediaQuery = "(orientation: landscape) and (min-width: 560px) and (max-width: 1023px) and (max-height: 500px)";
 const mobilePortraitMediaQuery = "(orientation: portrait) and (max-width: 639px)";
 
 function isProductSuggestion(value: unknown): value is ProductSuggestion {
@@ -72,6 +73,7 @@ export function Header() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isTabletLandscape, setIsTabletLandscape] = useState(false);
+  const [isMobileLandscape, setIsMobileLandscape] = useState(false);
   const [isMobilePortrait, setIsMobilePortrait] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [suggestions, setSuggestions] = useState<ProductSuggestion[]>([]);
@@ -81,7 +83,7 @@ export function Header() {
   const searchFormRef = useRef<HTMLFormElement>(null);
   const suggestionRequestIdRef = useRef(0);
   const isSearchExpanded = isSearchOpen && !isTabletLandscape;
-  const isSearchFieldVisible = isSearchOpen || isTabletLandscape || isMobilePortrait;
+  const isSearchFieldVisible = isSearchOpen || isTabletLandscape || isMobileLandscape || isMobilePortrait;
 
   useEffect(() => {
     const mediaQuery = window.matchMedia(tabletLandscapeMediaQuery);
@@ -99,6 +101,15 @@ export function Header() {
     mediaQuery.addEventListener("change", updateMobilePortrait);
 
     return () => mediaQuery.removeEventListener("change", updateMobilePortrait);
+  }, []);
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia(mobileLandscapeMediaQuery);
+    const updateMobileLandscape = () => setIsMobileLandscape(mediaQuery.matches);
+    updateMobileLandscape();
+    mediaQuery.addEventListener("change", updateMobileLandscape);
+
+    return () => mediaQuery.removeEventListener("change", updateMobileLandscape);
   }, []);
 
   useEffect(() => {
