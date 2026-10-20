@@ -358,5 +358,6 @@ export async function seedAdminCatalogIfEmpty(
       featured: product.featured,
       tags: product.tags,
     })),
+    skipDuplicates: true,
   });
 }
