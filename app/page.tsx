@@ -16,7 +16,7 @@ import { useCart } from "@/components/cart-context";
 import { useLanguage } from "@/components/language-context";
 import { ProductCard } from "@/components/product-card";
 import { scrollToSection } from "@/lib/scroll-to-section";
-import { categories, testimonials } from "@/lib/site-data";
+import { categories, getStoreCategoryName, testimonials } from "@/lib/site-data";
 import type { Product } from "@/lib/site-data";
 
 const acharCategoryName = categories.find((category) => category.id === "achar")?.name;
@@ -201,26 +201,26 @@ export default function HomePage() {
     setPendingSlide(null);
   };
   const currentSlide = heroSlides[activeSlide];
-  const catalogAcharProducts = catalogProducts.filter((product) =>
-    product.category === acharCategoryName,
+  const catalogAcharProducts = catalogProducts.filter(
+    (product) => getStoreCategoryName(product) === acharCategoryName,
   );
   const visibleProducts = catalogAcharProducts.filter((product) =>
     matchesProductFilter(product, activeProductFilter),
   );
   const catalogBalachaoProducts = catalogProducts.filter(
-    (product) => product.category === balachaoCategoryName,
+    (product) => getStoreCategoryName(product) === balachaoCategoryName,
   );
   const balachaoProducts = catalogBalachaoProducts.filter((product) =>
     matchesProductFilter(product, activeBalachaoFilter),
   );
   const catalogOtherProducts = catalogProducts.filter(
-    (product) => product.category === otherProductsCategoryName,
+    (product) => getStoreCategoryName(product) === otherProductsCategoryName,
   );
   const otherProducts = catalogOtherProducts.filter((product) =>
     matchesProductFilter(product, activeOtherProductsFilter),
   );
   const catalogComboProducts = catalogProducts.filter(
-    (product) => product.category === comboCategoryName,
+    (product) => getStoreCategoryName(product) === comboCategoryName,
   );
   const comboProducts = catalogComboProducts;
 

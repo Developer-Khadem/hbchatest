@@ -91,6 +91,37 @@ export const categories: Category[] = [
   },
 ];
 
+export function getStoreCategoryName(
+  product: Pick<Product, "category" | "name" | "englishName" | "translations">,
+) {
+  const values = [
+    product.category,
+    product.name,
+    product.englishName ?? "",
+    product.translations?.bn.category ?? "",
+    product.translations?.en.category ?? "",
+  ].map((value) => value.trim().toLocaleLowerCase());
+  const matches = (...terms: string[]) =>
+    values.some((value) => terms.some((term) => value.includes(term)));
+  const getCategoryName = (id: string, fallback: string) =>
+    categories.find((category) => category.id === id)?.name ?? fallback;
+
+  if (matches("কম্বো", "combo", "bundle")) {
+    return getCategoryName("combo", "কম্বো প্যাক");
+  }
+  if (matches("বালাচাও", "balachao", "balachaw")) {
+    return getCategoryName("balachao", "বালাচাও");
+  }
+  if (matches("আচার", "achar", "pickle")) {
+    return getCategoryName("achar", "আচার");
+  }
+  if (matches("snack", "নাস্তা", "খাদ্যপণ্য")) {
+    return getCategoryName("snacks", "অন্যান্য খাদ্যপণ্য");
+  }
+
+  return getCategoryName("snacks", "অন্যান্য খাদ্যপণ্য");
+}
+
 export const products: Product[] = [
   {
     id: "p1",
