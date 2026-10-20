@@ -1,5 +1,5 @@
 import type { Prisma } from "@prisma/client";
-import { seedAdminCatalogIfEmpty, serializeStoreProduct } from "@/lib/admin-products";
+import { serializeStoreProduct } from "@/lib/admin-products";
 import { prisma } from "@/lib/prisma";
 
 export function buildProductSearchWhere(query: string): Prisma.AcharProductWhereInput {
@@ -27,8 +27,6 @@ function getMatchRank(name: string, englishName: string, query: string) {
 export async function searchStoreProducts(query: string, take: number) {
   const normalizedQuery = query.trim();
   if (!normalizedQuery) return [];
-
-  await seedAdminCatalogIfEmpty(prisma);
 
   const records = await prisma.acharProduct.findMany({
     where: buildProductSearchWhere(normalizedQuery),

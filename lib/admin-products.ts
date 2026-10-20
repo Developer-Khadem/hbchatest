@@ -1,6 +1,5 @@
 import type { Prisma } from "@prisma/client";
 import {
-  products as storeProducts,
   type Product,
   type ProductTranslationFields,
   type ProductTranslations,
@@ -325,39 +324,4 @@ export function validateAdminProductPatch(value: unknown): ProductPatchValidatio
   }
 
   return { success: true, data };
-}
-
-export async function seedAdminCatalogIfEmpty(
-  db: Pick<Prisma.TransactionClient, "acharProduct">,
-) {
-  if (await db.acharProduct.count()) return;
-
-  await db.acharProduct.createMany({
-    data: storeProducts.map((product) => ({
-      id: product.id,
-      name: product.name,
-      englishName: product.name,
-      description: product.description,
-      price: Math.round(product.price),
-      compareAtPrice: product.salePrice === undefined ? null : Math.round(product.price),
-      category: product.category,
-      image: product.image,
-      badge: product.badge || null,
-      heat: "মাঝারি",
-      inStock: product.stock > 0,
-      updatedAt: new Date(),
-      brand: null,
-      images: product.gallery,
-      isActive: true,
-      stock: product.stock,
-      slug: product.slug,
-      shortDesc: product.description.slice(0, 240),
-      salePrice: product.salePrice === undefined ? null : Math.round(product.salePrice),
-      ingredients: product.highlights.join(", "),
-      unit: product.unit,
-      featured: product.featured,
-      tags: product.tags,
-    })),
-    skipDuplicates: true,
-  });
 }

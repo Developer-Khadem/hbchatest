@@ -1,11 +1,10 @@
 import { cacheLife, cacheTag, revalidateTag } from "next/cache";
-import { seedAdminCatalogIfEmpty, serializeStoreProduct } from "@/lib/admin-products";
+import { serializeStoreProduct } from "@/lib/admin-products";
 import { prisma } from "@/lib/prisma";
 
 export const STORE_PRODUCTS_CACHE_TAG = "store-products";
 
 export async function getStoreProducts() {
-  await seedAdminCatalogIfEmpty(prisma);
   return getCachedStoreProducts();
 }
 

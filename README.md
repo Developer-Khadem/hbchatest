@@ -29,7 +29,7 @@ npm run prisma:generate
 npm run db:push
 ```
 
-The support ticket form, checkout, and product catalog use PostgreSQL. For Vercel, set `DATABASE_URL` to your hosted PostgreSQL connection string in the project's Environment Variables, then apply the Prisma schema to that same database with `npm run db:push`. The storefront automatically inserts the starter catalog when the product table is empty; products added in the admin panel are preserved.
+The support ticket form, checkout, and product catalog use PostgreSQL. For Vercel, set `DATABASE_URL` to your hosted PostgreSQL connection string in the project's Environment Variables, then apply the Prisma schema to that same database with `npm run db:push`. The product catalog starts empty; add products from the admin panel.
 
 ## Product translations
 
